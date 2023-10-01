@@ -12,7 +12,8 @@
 class SSC32U {
  public:
   SSC32U(std::string port, speed_t baudRate);
-  void setPWM(uint8_t channel, uint32_t pulsewidth);
+  void startSerial();
+  void setPWM(uint32_t channel, uint32_t pulsewidth);
 
  private:
   const std::string port;

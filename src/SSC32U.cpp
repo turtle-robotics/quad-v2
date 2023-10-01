@@ -1,7 +1,11 @@
 #include "SSC32U.hpp"
 
 SSC32U::SSC32U(std::string port, speed_t baudRate)
-    : port{port}, baudRate{baudRate} {
+    : port{port}, baudRate{baudRate} {}
+
+void SSC32U::startSerial() {
+  serialPort = open(port.c_str(), O_RDWR);
+
   tty.c_cflag &= ~PARENB;
   tty.c_cflag &= ~CSTOPB;
   tty.c_cflag &= ~CSIZE;
@@ -38,7 +42,7 @@ void SSC32U::writeSerial(std::string msg) {
     std::cerr << "[Serial][ERROR] Failed to write on " << port << std::endl;
 }
 
-void SSC32U::setPWM(uint8_t channel, uint32_t pulsewidth) {
+void SSC32U::setPWM(uint32_t channel, uint32_t pulsewidth) {
   std::ostringstream stream;
   stream << "#" << channel << "P" << pulsewidth << "\r";
   writeSerial(stream.str());
