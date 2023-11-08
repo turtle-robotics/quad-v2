@@ -1,22 +1,23 @@
-#include <Eigen/Dense>
 #include <chrono>
 #include <iostream>
 #include <thread>
 
-#include "SSC32U.hpp"
+#include "Leg.hpp"
 
 using namespace std::chrono_literals;
 
 SSC32U pwmDriver{"/dev/ttyUSB0", B9600};
+Servo s1{15, pwmDriver, 0, 2000};
+Leg l1{{1, pwmDriver, 0, 2000},
+       {2, pwmDriver, 0, 2000},
+       {3, pwmDriver, 0, 2000},
+       {1, 1, 1},
+       1,
+       1,
+       1};
 
 int main() {
-  std::this_thread::sleep_for(1s);
-  pwmDriver.startSerial();
-  Eigen::Quaternion a{0, 1, 1, 1};
-  Eigen::Quaternion b{0, -1, 1, 1};
-  std::cout << a * b << std::endl;
-  pwmDriver.setPWM(0, 1000);
-  std::this_thread::sleep_for(1s);
-  pwmDriver.setPWM(0, 2000);
+  l1.setPosition({1, 2, 1});
+  l1.disable();
   return 0;
 }
