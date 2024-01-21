@@ -44,5 +44,5 @@ void SSC32U::setPWM(uint32_t channel, uint32_t pulsewidth) {
   std::ostringstream stream;
   stream << "#" << channel << "P" << pulsewidth << "\r";
   std::cout << stream.str() << std::endl;
-  // writeSerial(stream.str());
+  writeSerial(stream.str());
 }

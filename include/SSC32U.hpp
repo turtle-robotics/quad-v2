@@ -1,3 +1,4 @@
+#pragma once
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>

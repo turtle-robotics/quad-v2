@@ -1,23 +1,32 @@
-#include <chrono>
-#include <iostream>
-#include <thread>
+// #include <chrono>
+// #include <iostream>
+// #include <thread>
 
-#include "Leg.hpp"
+#include "Config.hpp"
+#include "UDPSocket.hpp"
 
 using namespace std::chrono_literals;
 
-SSC32U pwmDriver{"/dev/ttyUSB0", B9600};
-Servo s1{15, pwmDriver, 0, 2000};
-Leg l1{{1, pwmDriver, 0, 2000},
-       {2, pwmDriver, 0, 2000},
-       {3, pwmDriver, 0, 2000},
-       {1, 1, 1},
-       1,
-       1,
-       1};
+UDPJoystickSocket joystick{5005};
 
 int main() {
-  l1.setPosition({1, 2, 1});
-  l1.disable();
+  while (true) {
+    // LFS.setAngle(-pi / 6.0);
+    // RFS.setAngle(-pi / 6.0);
+    // std::this_thread::sleep_for(1s);
+    LFS.setAngle(0);
+    RFS.setAngle(0);
+    LBS.setAngle(0);
+    RBS.setAngle(0);
+    LFU.setAngle(0);
+    RFU.setAngle(0);
+    LBU.setAngle(0);
+    RBU.setAngle(0);
+    LFL.setAngle(pi / 2.0);
+    RFL.setAngle(pi / 2.0);
+    LBL.setAngle(pi / 2.0);
+    RBL.setAngle(pi / 2.0);
+    std::this_thread::sleep_for(1s);
+  }
   return 0;
 }

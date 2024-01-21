@@ -1,8 +1,9 @@
-
+#pragma once
+#include "Leg.hpp"
 
 class Chassis {
  public:
-  Chassis();
+  Chassis(Leg LF, Leg RF, Leg LB, LEG RB);
 
  private:
 };
