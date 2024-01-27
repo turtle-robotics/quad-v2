@@ -3,7 +3,7 @@
 
 class Chassis {
  public:
-  Chassis(Leg LF, Leg RF, Leg LB, LEG RB);
+  Chassis(Leg LF, Leg RF, Leg LB, Leg RB);
 
  private:
 };

@@ -14,8 +14,8 @@ Leg::Leg(Servo shoulder, Servo upperLeg, Servo lowerLeg,
 
 void Leg::setPosition(Eigen::Vector3f r) {
   constexpr float pi{std::numbers::pi_v<float>};
-  float x = r.x() - position.x();
-  float y = r.y() - position.y() + shoulderOffset;
+  float x = r.x();  // - position.x();
+  float y = r.y();  //- position.y() + shoulderOffset;
   float z =
       sqrtf(upperLen * upperLen + lowerLen * lowerLen) + r.z() - footRadius;
 
@@ -29,7 +29,8 @@ void Leg::setPosition(Eigen::Vector3f r) {
   float lowerAngle =
       pi - acosf((upperLen * upperLen + lowerLen * lowerLen - d2) /
                  (2.0f * upperLen * lowerLen));
-
+  std::cout << shoulderAngle << "," << upperAngle << "," << lowerAngle
+            << std::endl;
   shoulder.setAngle(shoulderAngle);
   upperLeg.setAngle(upperAngle);
   lowerLeg.setAngle(lowerAngle);

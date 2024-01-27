@@ -29,6 +29,11 @@ bool UDPJoystickSocket::startUDP() {
 
 void UDPJoystickSocket::readLoop(std::stop_token stopToken) {
   char buffer[maxline];
+  const struct timeval timeout = {
+      .tv_sec = 0, .tv_usec = std::chrono::microseconds(5ms).count()};
+  struct timeval this_timeout;
+  fd_set fds;
+
   while (!stopToken.stop_requested()) {
     if (!startUDP()) {
       std::this_thread::sleep_for(5ms);
@@ -36,6 +41,12 @@ void UDPJoystickSocket::readLoop(std::stop_token stopToken) {
     }
 
     while (!stopToken.stop_requested()) {
+      FD_ZERO(&fds);
+      FD_SET(sockfd, &fds);
+      this_timeout = timeout;
+      if (select(sockfd + 1, &fds, NULL, NULL, &this_timeout) < 1 &&
+          !FD_ISSET(sockfd, &fds))
+        continue;
       int n = recvfrom(sockfd, (char *)buffer, maxline, MSG_WAITALL,
                        (struct sockaddr *)&cliaddr, &len);
       if (n < 0) {

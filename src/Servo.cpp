@@ -1,6 +1,6 @@
 #include "Servo.hpp"
 
-Servo::Servo(uint32_t channel, SSC32U pwmDriver, uint32_t minPulse,
+Servo::Servo(uint32_t channel, SSC32U& pwmDriver, uint32_t minPulse,
              uint32_t maxPulse, float minAngle, float maxAngle)
     : channel{channel},
       pwmDriver{pwmDriver},

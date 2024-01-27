@@ -2,6 +2,10 @@
 
 SSC32U::SSC32U(std::string port, speed_t baudRate)
     : port{port}, baudRate{baudRate} {
+  serialThread = std::jthread{&SSC32U::writeLoop, this};
+}
+
+bool SSC32U::startSerial() {
   serialPort = open(port.c_str(), O_RDWR);
 
   tty.c_cflag &= ~PARENB;
@@ -29,10 +33,11 @@ SSC32U::SSC32U(std::string port, speed_t baudRate)
   if (tcsetattr(serialPort, TCSANOW, &tty) == -1) {
     std::cerr << "[Serial][ERROR] Failed to set tty settings on " << port
               << std::endl;
-    return;
+    return false;
   }
 
   std::cout << "[SERIAL][INFO] Serial initialized on " << port << std::endl;
+  return true;
 }
 
 void SSC32U::writeSerial(std::string msg) {
@@ -41,8 +46,24 @@ void SSC32U::writeSerial(std::string msg) {
 }
 
 void SSC32U::setPWM(uint32_t channel, uint32_t pulsewidth) {
-  std::ostringstream stream;
-  stream << "#" << channel << "P" << pulsewidth << "\r";
-  std::cout << stream.str() << std::endl;
-  writeSerial(stream.str());
+  outStream += "#" + std::to_string(channel) + "P" + std::to_string(pulsewidth);
+}
+
+void SSC32U::writeLoop(std::stop_token stopToken) {
+  std::string buffer;
+
+  while (!stopToken.stop_requested()) {
+    if (!startSerial()) {
+      std::this_thread::sleep_for(5ms);
+      return;
+    }
+
+    while (!stopToken.stop_requested()) {
+      buffer = outStream + "\r";
+      outStream = "";
+      writeSerial(buffer);
+      std::cout << buffer << std::endl;
+      std::this_thread::sleep_for(5ms);
+    }
+  }
 }

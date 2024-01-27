@@ -13,3 +13,4 @@ add_executable(quad src/Chassis.cpp src/Leg.cpp src/Robot.cpp src/Servo.cpp src/
 target_include_directories(quad PUBLIC include)
 target_link_libraries(quad Eigen3::Eigen -static)
 target_compile_features(quad PRIVATE cxx_std_20)
+target_compile_definitions(quad PRIVATE QUAD_V1=1)

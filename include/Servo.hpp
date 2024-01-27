@@ -7,7 +7,8 @@
 
 class Servo {
  public:
-  Servo(uint32_t channel, SSC32U pwmDriver, uint32_t minPulse,
+  // port, driver, pwm val 1, pwm val 2, angle 1, angle 2 (bounds)
+  Servo(uint32_t channel, SSC32U& pwmDriver, uint32_t minPulse,
         uint32_t maxPulse, float minAngle = 0.0f,
         float maxAngle = 2.0f * std::numbers::pi_v<float>);
   void setAngle(float angle);
@@ -15,7 +16,7 @@ class Servo {
 
  private:
   const uint32_t channel;
-  SSC32U pwmDriver;
+  SSC32U& pwmDriver;
   const uint32_t minPulse, maxPulse;
   const float minAngle, maxAngle;
 

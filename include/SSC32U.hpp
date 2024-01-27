@@ -1,14 +1,14 @@
 #pragma once
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/select.h>
 #include <termios.h>
-#include <unistd.h>
 
+#include <chrono>
 #include <cstdint>
 #include <iostream>
-#include <sstream>
-#include <string>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 class SSC32U {
  public:
@@ -16,10 +16,13 @@ class SSC32U {
   void setPWM(uint32_t channel, uint32_t pulsewidth);
 
  private:
-  const std::string port;
-  const speed_t baudRate;
+  std::string port;
+  speed_t baudRate;
   int serialPort;
   struct termios tty;
-
+  std::string outStream;
+  std::jthread serialThread;
+  bool startSerial();
+  void writeLoop(std::stop_token stopToken);
   void writeSerial(std::string msg);
 };
