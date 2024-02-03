@@ -3,21 +3,22 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <Eigen/Geometry>
 #include <chrono>
 #include <cstdint>
-#include <cstring>
 #include <iostream>
 #include <thread>
 
 using namespace std::chrono_literals;
 
-constexpr uint32_t maxline = 1024;
+constexpr uint32_t maxline = sizeof(Eigen::Vector2f);
 
 class UDPJoystickSocket {
  public:
-  UDPJoystickSocket(uint16_t port);
+  UDPJoystickSocket(uint16_t port, Eigen::Vector2f &data);
 
  private:
+  Eigen::Vector2f &data;
   uint16_t port;
   int sockfd;
   struct sockaddr_in servaddr, cliaddr;

@@ -46,7 +46,7 @@ void SSC32U::writeSerial(std::string msg) {
 }
 
 void SSC32U::setPWM(uint32_t channel, uint32_t pulsewidth) {
-  outStream += "#" + std::to_string(channel) + "P" + std::to_string(pulsewidth);
+  output += "#" + std::to_string(channel) + "P" + std::to_string(pulsewidth);
 }
 
 void SSC32U::writeLoop(std::stop_token stopToken) {
@@ -59,11 +59,12 @@ void SSC32U::writeLoop(std::stop_token stopToken) {
     }
 
     while (!stopToken.stop_requested()) {
-      buffer = outStream + "\r";
-      outStream = "";
-      writeSerial(buffer);
-      std::cout << buffer << std::endl;
       std::this_thread::sleep_for(5ms);
+      if (output.empty()) continue;
+      buffer = output + "\r";
+      output = "";
+      writeSerial(buffer);
+      // std::cout << buffer << std::endl;
     }
   }
 }

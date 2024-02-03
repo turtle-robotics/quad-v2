@@ -20,7 +20,7 @@ class SSC32U {
   speed_t baudRate;
   int serialPort;
   struct termios tty;
-  std::string outStream;
+  std::string output;
   std::jthread serialThread;
   bool startSerial();
   void writeLoop(std::stop_token stopToken);

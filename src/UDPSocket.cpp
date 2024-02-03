@@ -1,7 +1,8 @@
 #include "UDPSocket.hpp"
 // https://www.geeksforgeeks.org/udp-server-client-implementation-c/
 
-UDPJoystickSocket::UDPJoystickSocket(uint16_t port) : port{port} {
+UDPJoystickSocket::UDPJoystickSocket(uint16_t port, Eigen::Vector2f &data)
+    : port{port}, data{data} {
   udpThread = std::jthread{&UDPJoystickSocket::readLoop, this};
 }
 
@@ -47,14 +48,15 @@ void UDPJoystickSocket::readLoop(std::stop_token stopToken) {
       if (select(sockfd + 1, &fds, NULL, NULL, &this_timeout) < 1 &&
           !FD_ISSET(sockfd, &fds))
         continue;
-      int n = recvfrom(sockfd, (char *)buffer, maxline, MSG_WAITALL,
+      int n = recvfrom(sockfd, &data, sizeof(data), MSG_WAITALL,
                        (struct sockaddr *)&cliaddr, &len);
       if (n < 0) {
         std::cerr << "[UDP][ERROR] Failed to receive from UDP" << std::endl;
         return;
       }
-      buffer[n] = '\0';
-      printf("Client : %s\n", buffer);
+      // buffer[n] = '\0';
+      std::cout << "Client :" << sizeof(data) << ", " << data.x() << " "
+                << data.y() << std::endl;
     }
   }
 }

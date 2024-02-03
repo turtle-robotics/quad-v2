@@ -1,9 +1,8 @@
 #pragma once
 #include <numbers>
 
-#include "../Leg.hpp"
+#include "../Chassis.hpp"
 #include "../SSC32U.hpp"
-#include "../Servo.hpp"
 
 using std::numbers::pi;
 
@@ -17,51 +16,38 @@ constexpr float footRadius = 0.020f;
 SSC32U pwmDriver{"/dev/ttyUSB0", B115200};
 
 // Angle of leg fully scrunched: 0.82510782
+// Angle of leg fully extended: 2.82095426
 Servo LFS{18, pwmDriver, 550, 1200, -pi / 2.0, 0};
-Servo LFU{17, pwmDriver, 900, 1560, 0, pi / 2.0};
-Servo LFL{16, pwmDriver, 1500, 1050, pi / 2.0, 0.82510782};
+Servo LFU{17, pwmDriver, 900, 1560, pi / 2.0, 0};
+Servo LFL{16, pwmDriver, 1800, 1050, 0.82510782, 2.82095426};
 
 Servo RFS{29, pwmDriver, 1200, 530, -pi / 2.0, 0};
-Servo RFU{30, pwmDriver, 2000, 1350, 0, pi / 2.0};
-Servo RFL{31, pwmDriver, 1500, 2000, pi / 2.0, 0.82510782};
+Servo RFU{30, pwmDriver, 2000, 1350, pi / 2.0, 0};
+Servo RFL{31, pwmDriver, 1150, 2000, 0.82510782, 2.82095426};
 
 Servo LBS{2, pwmDriver, 1250, 600, -pi / 2.0, 0};
-Servo LBU{1, pwmDriver, 500, 1200, 0, pi / 2.0};
-Servo LBL{0, pwmDriver, 1500, 950, pi / 2.0, 0.82510782};
+Servo LBU{1, pwmDriver, 500, 1200, pi / 2.0, 0};
+Servo LBL{0, pwmDriver, 1750, 950, 0.82510782, 2.82095426};
 
 Servo RBS{13, pwmDriver, 1530, 2180, -pi / 2.0, 0};
-Servo RBU{14, pwmDriver, 1230, 550, 0, pi / 2.0};
-Servo RBL{15, pwmDriver, 1500, 2050, pi / 2.0, 0.82510782};
+Servo RBU{14, pwmDriver, 1230, 550, pi / 2.0, 0};
+Servo RBL{15, pwmDriver, 1200, 2050, 0.82510782, 2.82095426};
 
-Leg LF{LFS,
-       LFU,
-       LFL,
-       {chassisLength / 2.0, -chassisWidth / 2.0, 0},
-       upperLegLength,
-       lowerLegLength,
-       footRadius,
-       shoulderWidth};
-Leg RF{RFS,
-       RFU,
-       RFL,
-       {chassisLength / 2.0, chassisWidth / 2.0, 0},
-       upperLegLength,
-       lowerLegLength,
-       footRadius,
-       shoulderWidth};
-Leg LB{LBS,
-       LBU,
-       LBL,
-       {-chassisLength / 2.0, -chassisWidth / 2.0, 0},
-       upperLegLength,
-       lowerLegLength,
-       footRadius,
-       shoulderWidth};
-Leg RB{RBS,
-       RBU,
-       RBL,
-       {-chassisLength / 2.0, chassisWidth / 2.0, 0},
-       upperLegLength,
-       lowerLegLength,
-       footRadius,
-       shoulderWidth};
+Chassis chassis{chassisWidth,
+                chassisLength,
+                upperLegLength,
+                lowerLegLength,
+                shoulderWidth,
+                footRadius,
+                LFS,
+                LFU,
+                LFL,
+                RFS,
+                RFU,
+                RFL,
+                LBS,
+                LBU,
+                LBL,
+                RBS,
+                RBU,
+                RBL};
