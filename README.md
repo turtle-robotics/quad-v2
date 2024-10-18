@@ -12,6 +12,7 @@
 - to load stored config run `conf load` in tview gui
 - if things are funky try `conf load` a few times   
 - need to figure out how to `conf load` from a python script
+- moteus console: python3 -m moteus-tview.gui
 
 ## To Reset Configs
 - to load default config in tview gui write `conf default` then `conf write`
