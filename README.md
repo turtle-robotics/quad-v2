@@ -13,6 +13,7 @@
 - if things are funky try `conf load` a few times   
 - need to figure out how to `conf load` from a python script
 - moteus console: python3 -m moteus-tview.gui
+- calibrate: python3 -m moteus.moteus_tool --target 1 --calibrate
 
 ## To Reset Configs
 - to load default config in tview gui write `conf default` then `conf write`
