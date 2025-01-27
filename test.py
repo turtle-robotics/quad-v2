@@ -30,12 +30,6 @@ async def main():
     # CAN-FD transport, prefering an attached fdcanusb if available.
     c = moteus.Controller()
 
-    # doesn't work
-    # s = moteus.Stream(c)
-    # cmd = s.command("conf load")
-    # await s.write_message()
-    # s.write(cmd)
-
     # In case the controller had faulted previously, at the start of
     # this script we send the stop command in order to clear it.
     await c.set_stop()
@@ -50,8 +44,8 @@ async def main():
         # The return type of 'set_position' is a moteus.Result type.
         # It has a __repr__ method, and has a 'values' field which can
         # be used to examine individual result registers.
-        state = await c.set_position(position=0    , query=True)
-        # state = await c.set_position(position=math.nan, velocity=10, query=True)
+        # state = await c.set_position(position=0    , query=True)
+        state = await c.set_position(position=math.nan, velocity=10, query=True)
 
         # Print out everything.
         print(state)

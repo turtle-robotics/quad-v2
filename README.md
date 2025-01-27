@@ -51,3 +51,12 @@ conf set servo.default_accel_limit 20.0
 5. `conf write` in tview
 6. `conf load` in tview
 7. `d pos nan 1 nan` in tview
+
+## Known Working Steps Python Script
+Assuming the motor controller has the configuration stored on it from the above section (run again if not)
+
+If fault code is 36, the motor needs to be calibrated with the moteus tool. Run `python3 -m moteus.moteus_tool --target 1 --calibrate` in your terminal, **THIS WILL SPIN THE MOTOR A LOT**
+
+If something stops working, unplug and replug
+
+1. run test.py
