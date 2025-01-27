@@ -1,2 +1,2 @@
-moteus==0.3.72
-moteus-gui==0.3.72
+moteus==0.3.76
+moteus-gui==0.3.76
