@@ -19,12 +19,12 @@
 - to load default config in tview gui write `conf default` then `conf write`
 - to get correct configs copy   
 ```
-conf set servo.pid_position.kp 4.0
-conf set servo.pid_position.ki 0.0
-conf set servo.pid_position.kd 0.2
+conf set servo.pid_position.kp 100
+conf set servo.pid_position.ki 1
+conf set servo.pid_position.kd 10
 conf set servopos.position_min nan
 conf set servopos.position_max nan
-conf set motor_position.rotor_to_output_ratio 1.0
+conf set motor_position.rotor_to_output_ratio 0.0526315789
 conf set servo.max_velocity 10.0
 conf set servo.default_velocity_limit 8.0
 conf set servo.default_accel_limit 20.0
@@ -38,12 +38,12 @@ into tview gui then run `conf write`
 3. zero offset `python3 -m moteus.moteus_tool --target 1 --zero-offset`
 4. apply config in tview 
 ```
-conf set servo.pid_position.kp 4.0
-conf set servo.pid_position.ki 0.0
-conf set servo.pid_position.kd 0.2
+conf set servo.pid_position.kp 100
+conf set servo.pid_position.ki 1
+conf set servo.pid_position.kd 10
 conf set servopos.position_min nan
 conf set servopos.position_max nan
-conf set motor_position.rotor_to_output_ratio 1.0
+conf set motor_position.rotor_to_output_ratio 0.0526315789
 conf set servo.max_velocity 10.0
 conf set servo.default_velocity_limit 8.0
 conf set servo.default_accel_limit 20.0
