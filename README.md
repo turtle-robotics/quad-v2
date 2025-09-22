@@ -6,6 +6,41 @@
     - https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
 - https://github.com/mjbots/moteus/blob/main/docs/getting_started.md
 
+## Color Scheme System
+The robot includes a color scheme management system for 3D printing consistency:
+
+### Quick Start
+```bash
+# List available color schemes
+python3 color_scheme.py list
+
+# Preview a color scheme
+python3 color_scheme.py preview turtle_green
+
+# Set active color scheme
+python3 color_scheme.py set turtle_green
+
+# Generate 3D printing guide
+python3 robot_colors.py guide
+
+# Export colors for other tools
+python3 robot_colors.py export
+```
+
+### Available Schemes
+- `classic_black_red`: Classic black chassis with red accents
+- `turtle_green`: TURTLE Robotics themed green and black
+- `industrial_blue`: Industrial blue and silver theme  
+- `sunset_orange`: Warm sunset orange and black
+- `arctic_white`: Clean white and blue arctic theme
+
+### Component Types
+- **Chassis**: Main robot body structure
+- **Upper Legs**: Shoulder and thigh components
+- **Lower Legs**: Shin and foot components
+- **Joints**: Motor mounts and pivot points
+- **Accents**: Decorative elements and logos
+
 
 ## Notes
 - position range is -1 to 1 revolutions by default
