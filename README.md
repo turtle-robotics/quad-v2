@@ -1,6 +1,6 @@
 # TURTLE QUAD V2
 
-Depencencies:
+Dependencies:
  - moteus
  - Eigen 3
  - SDL 3
