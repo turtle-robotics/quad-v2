@@ -6,23 +6,16 @@
 
 #include "Leg.hpp"
 
-class Chassis {
- public:
-  Chassis(float chassisWidth, float chassisLength, float upperLegLength,
-          float lowerLegLength, float shoulderWidth, float footRadius,
-
-          Servo LFS, Servo LFU, Servo LFL,
-
-          Servo RFS, Servo RFU, Servo RFL,
-
-          Servo LBS, Servo LBU, Servo LBL,
-
-          Servo RBS, Servo RBU, Servo RBL);
+class Chassis
+{
+public:
+  Chassis(float chassisWidth, float chassisLength,
+          Leg LF, Leg RF, Leg LB, Leg RB);
   void walk();
   Eigen::Vector2f velocity;
   float angularVelocity;
 
- private:
+private:
   float chassisWidth, chassisLength;
   float upperLegLength, lowerLegLength, shoulderWidth, footRadius;
   float reach;

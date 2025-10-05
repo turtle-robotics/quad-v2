@@ -1,54 +1,68 @@
 #include "Chassis.hpp"
 
-Chassis::Chassis(float chassisWidth, float chassisLength, float upperLegLength,
-                 float lowerLegLength, float shoulderWidth, float footRadius,
-
-                 Servo LFS, Servo LFU, Servo LFL,
-
-                 Servo RFS, Servo RFU, Servo RFL,
-
-                 Servo LBS, Servo LBU, Servo LBL,
-
-                 Servo RBS, Servo RBU, Servo RBL)
+Chassis::Chassis(float chassisWidth, float chassisLength, Leg LF, Leg RF, Leg LB, Leg RB)
     : chassisWidth{chassisWidth},
       chassisLength{chassisLength},
-      upperLegLength{upperLegLength},
-      lowerLegLength{lowerLegLength},
-      shoulderWidth{shoulderWidth},
-      footRadius{footRadius},
-      LF{LFS,        LFU,          LFL, upperLegLength, lowerLegLength,
-         footRadius, shoulderWidth},
-      RF{RFS,        RFU,          RFL, upperLegLength, lowerLegLength,
-         footRadius, shoulderWidth},
-      LB{LBS,        LBU,          LBL, upperLegLength, lowerLegLength,
-         footRadius, shoulderWidth},
-      RB{RBS,        RBU,          RBL, upperLegLength, lowerLegLength,
-         footRadius, shoulderWidth},
+      LF{LF},
+      RF{RF},
+      LB{LB},
+      RB{RB},
       reach{sqrtf(powf(upperLegLength + lowerLegLength, 2) +
                   powf(shoulderWidth, 2))},
-      basePos{0, shoulderWidth, 0.8f * reach} {}
+      basePos{0, shoulderWidth - 0.01f, 0.7f * reach}
+{
+} // Wider gait for higher stability
 
-Eigen::Vector3f Chassis::p(Eigen::Vector2f v, float t, float n) {
-  using std::numbers::pi;
-  if (t < 1.0f) {
-    t += 1.0f;
-    float x = cosf(pi * t) * (1.0f - sinf(pi * t)) + 1.0f;
-    return -0.5f * Eigen::Vector3f{v.x() * x, v.y() * x, powf(sinf(pi * t), 2)};
-  } else {
-    float x = (n - t) / (n - 1.0f);
-    return -Eigen::Vector3f{v.x() * x, v.y() * x, 0.0f};
-  }
-}
+// Chassis::~Chassis() {
+//   LF.disable();
+//   RF.disable();
+//   LB.disable();
+//   RB.disable();
+// }
 
-void Chassis::walk() {
-  using namespace std::chrono;
-  auto end{high_resolution_clock::now()};
-  duration<float> d = end - start;
-  float n = 2.0;
+// Eigen::Vector3f Chassis::p(Eigen::Vector2f v, float t, float n)
+// {
+//   using std::numbers::pi;
+//   if (t < 1.0f)
+//   {
+//     t += 1.0f;
+//     float x = cosf(pi * t) * (1.0f - sinf(pi * t)) + 1.0f;
+//     return -0.5f * Eigen::Vector3f{v.x() * x, v.y() * x, powf(sinf(pi * t), 2)};
+//   }
+//   else
+//   {
+//     float x = (n - t) / (n - 1.0f);
+//     return -Eigen::Vector3f{v.x() * x, v.y() * x, 0.0f};
+//   }
+// }
 
-  float t = d.count();
-  float strideLength = 0.1f;
-  RF.setPosition(basePos + strideLength * p(velocity, t, n));
-  LB.setPosition(basePos + strideLength * p(velocity, fmod(t + .75 * n, n), n));
-  //   std::cout << out << std::endl;
-}
+// void Chassis::walk()
+// {
+//   using namespace std::chrono;
+//   auto end{high_resolution_clock::now()};
+//   duration<float> d = end - start;
+//   float n = 2.0; // seconds/cycle
+
+//   float t = d.count();       // seconds
+//   float strideLength = 0.1f; // meters
+
+//   Eigen::Vector3f p1 = basePos + strideLength * p(velocity, fmod(t, n), n);
+//   Eigen::Vector3f p2 =
+//       basePos + strideLength * p(velocity, fmod(t + .25 * n, n), n);
+//   Eigen::Vector3f p3 =
+//       basePos + strideLength * p(velocity, fmod(t + .5 * n, n), n);
+//   Eigen::Vector3f p4 =
+//       basePos + strideLength * p(velocity, fmod(t + .75 * n, n), n);
+
+//   if (fabs(velocity.x()) < 0.01 && fabs(velocity.y()) < 0.01)
+//   {
+//     p1 = basePos;
+//     p2 = basePos;
+//     p3 = basePos;
+//     p4 = basePos;
+//   }
+//   RF.setPosition(p1);
+//   LB.setPosition(p2);
+//   LF.setPosition(p3);
+//   RB.setPosition(p4);
+// }

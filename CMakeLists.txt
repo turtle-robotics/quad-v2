@@ -1,16 +1,26 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 4.0)
 project(
   TurtleQUAD
   VERSION 1.0
   LANGUAGES CXX)
 
-set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
-set(CMAKE_CXX_FLAGS -static-libstdc++)
+include(FetchContent)
 
-find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+# set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
+# set(CMAKE_CXX_FLAGS -static-libstdc++)
 
-add_executable(quad src/Chassis.cpp src/Leg.cpp src/Robot.cpp src/Servo.cpp src/SSC32U.cpp src/UDPSocket.cpp)
+find_package(Eigen3 5 REQUIRED NO_MODULE)
+find_package(yaml-cpp 0 REQUIRED NO_MODULE)
+find_package(SDL3 0 REQUIRED NO_MODULE)
+FetchContent_Declare(
+  moteus
+  GIT_REPOSITORY https://github.com/mjbots/moteus.git
+  GIT_TAG 0.1-20250925
+)
+FetchContent_MakeAvailable(moteus)
+
+add_executable(quad src/main.cpp src/Robot.cpp src/Chassis.cpp src/Leg.cpp)
 target_include_directories(quad PUBLIC include)
-target_link_libraries(quad Eigen3::Eigen -static)
-target_compile_features(quad PRIVATE cxx_std_20)
-target_compile_definitions(quad PRIVATE QUAD_V1=1)
+target_link_libraries(quad Eigen3::Eigen yaml-cpp::yaml-cpp SDL3::SDL3 moteus::cpp) # -static)
+# target_compile_features(quad PRIVATE cxx_std_20)
+# target_compile_definitions(quad PRIVATE QUAD_V1=1)

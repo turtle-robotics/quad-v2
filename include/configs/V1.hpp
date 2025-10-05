@@ -18,12 +18,12 @@ SSC32U pwmDriver{"/dev/ttyUSB0", B115200};
 // Angle of leg fully scrunched: 0.82510782
 // Angle of leg fully extended: 2.82095426
 Servo LFS{18, pwmDriver, 550, 1200, -pi / 2.0, 0};
-Servo LFU{17, pwmDriver, 900, 1560, pi / 2.0, 0};
+Servo LFU{17, pwmDriver, 950, 1610, pi / 2.0, 0};
 Servo LFL{16, pwmDriver, 1800, 1050, 0.82510782, 2.82095426};
 
 Servo RFS{29, pwmDriver, 1200, 530, -pi / 2.0, 0};
-Servo RFU{30, pwmDriver, 2000, 1350, pi / 2.0, 0};
-Servo RFL{31, pwmDriver, 1150, 2000, 0.82510782, 2.82095426};
+Servo RFU{30, pwmDriver, 2100, 1450, pi / 2.0, 0};
+Servo RFL{31, pwmDriver, 1200, 2050, 0.82510782, 2.82095426};
 
 Servo LBS{2, pwmDriver, 1250, 600, -pi / 2.0, 0};
 Servo LBU{1, pwmDriver, 500, 1200, pi / 2.0, 0};
