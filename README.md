@@ -3,5 +3,5 @@
 Dependencies:
  - moteus
  - Eigen 3
- - SDL 3
+ - SDL 2
  - yaml-cpp

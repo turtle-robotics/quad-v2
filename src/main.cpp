@@ -72,6 +72,7 @@ int main(int argc, char **argv)
         LF, RF, LB, RB};
 
     Robot robot{chassis_inst};
+    
     std::cout << "Robot initialized successfully." << std::endl;
 
     std::cout << "Running..." << std::endl;
