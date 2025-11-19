@@ -20,7 +20,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(moteus)
 
 add_executable(quad src/main.cpp src/Robot.cpp src/Chassis.cpp src/Leg.cpp)
+
 target_include_directories(quad PUBLIC include)
 target_link_libraries(quad Eigen3::Eigen yaml-cpp::yaml-cpp SDL3::SDL3 moteus::cpp) # -static)
 # target_compile_features(quad PRIVATE cxx_std_20)
 # target_compile_definitions(quad PRIVATE QUAD_V1=1)
+
+# separate motor test executable
+add_executable(motor_test src/position_control.cpp)
+target_include_directories(motor_test PUBLIC include)
+target_link_libraries(motor_test PRIVATE Eigen3::Eigen yaml-cpp::yaml-cpp moteus::cpp)
