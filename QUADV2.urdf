@@ -1,0 +1,26 @@
+
+<robot name="QUAD_V2">
+  <link name="shoulder" />
+  <link name="upper" />
+  <link name="lower" />
+  <link name="foot" />
+
+
+  <joint name="shoulder" type="continuous">
+    <parent link="shoulder"/>
+    <child link="upper"/>
+    <origin xyz="5 3 0" rpy="0 0 0" />
+  </joint>
+
+  <joint name="upper" type="continuous">
+    <parent link="upper"/>
+    <child link="lower"/>
+    <origin xyz="-2 5 0" rpy="0 0 1.57" />
+  </joint>
+
+  <joint name="lower" type="continuous">
+    <parent link="lower"/>
+    <child link="foot"/>
+    <origin xyz="5 0 0" rpy="0 0 -1.57" />
+  </joint>
+</robot>

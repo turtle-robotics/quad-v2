@@ -1,0 +1,42 @@
+name: TURTLE QUAD V2
+chassis:
+  width: 0.07183850 # m
+  length: 0.31559532 # m
+  mass: 15 # kg
+  centerOfMasses:
+    x: 0 # m
+    y: 0 # m
+    z: 0 # m
+leg:
+  lengths:
+    upper: 0.192 # m
+    lower: 0.192 # m
+    shoulder: 0.04715084 # m
+    foot: 0.020 # m
+  masses:
+    upper: 0.5 # kg
+    lower: 0.5 # kg
+    shoulder: 0.2 # kg
+    foot: 0.1 # kg
+  centerOfMasses:
+    upper: 0.096 # m
+    lower: 0.096 # m
+    shoulder: 0.02357542 # m
+    foot: 0 # m
+legs:
+  LF:
+    shoulder: 11
+    upper: 12
+    lower: 13
+  RF:
+    shoulder: 21
+    upper: 22
+    lower: 23
+  LB:
+    shoulder: 31
+    upper: 32
+    lower: 33
+  RB:
+    shoulder: 41
+    upper: 42
+    lower: 43
