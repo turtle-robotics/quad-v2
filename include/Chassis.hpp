@@ -9,18 +9,17 @@
 class Chassis
 {
 public:
-  Chassis(float chassisWidth, float chassisLength,
-          Leg LF, Leg RF, Leg LB, Leg RB);
+  Chassis(float width, float length, Leg* legs[4]);
   void walk();
   Eigen::Vector2f velocity;
   float angularVelocity;
 
 private:
-  float chassisWidth, chassisLength;
+  float width, chassisLength;
   float upperLegLength, lowerLegLength, shoulderWidth, footRadius;
   float reach;
   Eigen::Vector3f basePos;
-  Leg LF, RF, LB, RB;
+  Leg* legs[4];
   std::chrono::high_resolution_clock::time_point start{
       std::chrono::high_resolution_clock::now()};
 

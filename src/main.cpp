@@ -1,3 +1,27 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2026 Ian Lansdowne
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <yaml-cpp/yaml.h>
 #include <string>
 #include <iostream>
@@ -7,77 +31,49 @@
 
 using namespace std::chrono_literals;
 
-Robot *robot;
+Robot robot;
+
+// Legs are numbered from 1 to 4: Front Right, Front Left, Back Right, Back Left
+// Joints are numbered from 1 to 3: Shoulder, Upper Leg, Lower Leg
+// Motor CAN IDs follow: AB where A is the leg number and B is the joint number
 
 int main(int argc, char **argv)
 {
+
+    // Load configuration file from command line argument
     if (argc < 2)
     {
         std::cerr << "Usage: " << argv[0] << " <config_file.yaml>" << std::endl;
         return 1;
     }
     std::string config_file = argv[1];
+
+    // Load and parse the YAML configuration file
     std::cout << "Starting robot with config file " << config_file << std::endl;
     YAML::Node config = YAML::LoadFile(config_file);
+
     if (config.IsNull() || config["name"].IsNull())
     {
         std::cerr << "Failed to load configuration file: " << config_file << std::endl;
         return 1;
     }
-    std::cout << "Config file for " << config["name"] << " loaded successfully." << std::endl;
-    std::cout << "Initializing robot..." << std::endl;
 
-    if (config["chassis"].IsNull() || config["legs"].IsNull() || config["leg"].IsNull())
+    if (robot.configure(config) != 0)
     {
-        std::cerr << "Invalid configuration file: missing 'legs' or 'chassis' section." << std::endl;
+        std::cerr << "Failed to configure robot." << std::endl;
         return 1;
     }
 
-    const auto &leg = config["leg"];
-
-    if (leg["shoulderLen"].IsNull() || leg["upperLen"].IsNull() || leg["lowerLen"].IsNull() || leg["footRadius"].IsNull())
+    if (robot.init() != 0)
     {
-        std::cerr << "Invalid configuration file: missing leg parameters." << std::endl;
+        std::cerr << "Failed to initialize robot." << std::endl;
         return 1;
     }
-    Leg LF{
-        leg["upperLen"].as<float>(),
-        leg["lowerLen"].as<float>(),
-        leg["footRadius"].as<float>(),
-        leg["shoulderLen"].as<float>()};
-    Leg RF{
-        leg["upperLen"].as<float>(),
-        leg["lowerLen"].as<float>(),
-        leg["footRadius"].as<float>(),
-        -leg["shoulderLen"].as<float>()};
-    Leg LB{
-        leg["upperLen"].as<float>(),
-        leg["lowerLen"].as<float>(),
-        leg["footRadius"].as<float>(),
-        leg["shoulderLen"].as<float>()};
-    Leg RB{
-        leg["upperLen"].as<float>(),
-        leg["lowerLen"].as<float>(),
-        leg["footRadius"].as<float>(),
-        -leg["shoulderLen"].as<float>()};
-    const auto &chassis = config["chassis"];
-    if (chassis["width"].IsNull() || chassis["length"].IsNull())
-    {
-        std::cerr << "Invalid configuration file: missing chassis parameters." << std::endl;
-        return 1;
-    }
-    Chassis chassis_inst{
-        chassis["width"].as<float>(),
-        chassis["length"].as<float>(),
-        LF, RF, LB, RB};
-
-    Robot robot{chassis_inst};
-    std::cout << "Robot initialized successfully." << std::endl;
 
     std::cout << "Running..." << std::endl;
     while (true)
     {
-        std::this_thread::sleep_for(10ms);
+        usleep(10000);
     }
 
     return 0;

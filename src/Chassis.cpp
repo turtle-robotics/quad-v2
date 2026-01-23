@@ -1,16 +1,19 @@
 #include "Chassis.hpp"
 
-Chassis::Chassis(float chassisWidth, float chassisLength, Leg LF, Leg RF, Leg LB, Leg RB)
-    : chassisWidth{chassisWidth},
-      chassisLength{chassisLength},
-      LF{LF},
-      RF{RF},
-      LB{LB},
-      RB{RB},
-      reach{sqrtf(powf(upperLegLength + lowerLegLength, 2) +
-                  powf(shoulderWidth, 2))},
-      basePos{0, shoulderWidth - 0.01f, 0.7f * reach}
+Chassis::Chassis(float width, float length, Leg* legs[4]):
+width{width},
+chassisLength{length}
 {
+  legs = legs;
+  // chassisWidth{chassisWidth},
+  //     chassisLength{chassisLength},
+  //     LF{LF},
+  //     RF{RF},
+  //     LB{LB},
+  //     RB{RB},
+  //     reach{sqrtf(powf(upperLegLength + lowerLegLength, 2) +
+  //                 powf(shoulderWidth, 2))},
+  //     basePos{0, shoulderWidth - 0.01f, 0.7f * reach}
 } // Wider gait for higher stability
 
 // Chassis::~Chassis() {
