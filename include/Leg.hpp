@@ -1,11 +1,10 @@
 #pragma once
 #include <Eigen/Core>
+#include <cmath>
 #include <iostream>
 #include <numbers>
-#include <cmath>
 
-class Leg
-{
+class Leg {
 public:
   Leg(float lengths[3], float r_foot);
 

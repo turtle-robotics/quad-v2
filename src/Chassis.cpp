@@ -1,9 +1,7 @@
 #include "Chassis.hpp"
 
-Chassis::Chassis(float width, float length, Leg* legs[4]):
-width{width},
-chassisLength{length}
-{
+Chassis::Chassis(float width, float length, Leg *legs[4])
+    : width{width}, chassisLength{length} {
   legs = legs;
   // chassisWidth{chassisWidth},
   //     chassisLength{chassisLength},
@@ -30,7 +28,8 @@ chassisLength{length}
 //   {
 //     t += 1.0f;
 //     float x = cosf(pi * t) * (1.0f - sinf(pi * t)) + 1.0f;
-//     return -0.5f * Eigen::Vector3f{v.x() * x, v.y() * x, powf(sinf(pi * t), 2)};
+//     return -0.5f * Eigen::Vector3f{v.x() * x, v.y() * x, powf(sinf(pi * t),
+//     2)};
 //   }
 //   else
 //   {

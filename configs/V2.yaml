@@ -13,3 +13,15 @@ servomap:
   3: [31,32,33]
   4: [41,42,43]
   5: [1]
+motor_config:
+  - servopos.position_max nan
+  - servopos.position_min nan
+  - servo.pid_position.kp 50
+  - servo.pid_position.ki 1
+  - servo.pid_position.kd 10
+  - servo.pid_position.ilimit 0.2
+  - servo.max_velocity 10.0
+  - servo.default_velocity_limit 8.0
+  - servo.default_accel_limit 20.0
+  - motor_position.rotor_to_output_ratio 0.0526315789
+gamepad: /dev/input/by-id/usb-Logitech_Wireless_Gamepad_F710_D63B91BB-event-joystick

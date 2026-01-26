@@ -8,3 +8,8 @@ Dependencies:
  - Eigen 3
  - SDL 3
  - yaml-cpp
+
+CMake command:
+```sh
+cmake . -DCMAKE_TOOLCHAIN_FILE=toolchain-aarch64.cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+```
