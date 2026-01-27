@@ -1,103 +1,12 @@
 #include "Robot.hpp"
 
-#include <signal.h>
-
+#include <format>
 #include <iostream>
-
-void signal_callback_handler(int signum) {
-  ::printf("\033[2J\033[H"); // clear screen
-  robot.stopMotors();
-
-  exit(signum);
-}
-
-void print_help(const char *program_name) {
-  std::cout << "Usage: " << program_name << " <config_file.yaml> [-chw]"
-            << std::endl;
-  std::cout << "  -c : Configure motors from the configuration file."
-            << std::endl;
-  std::cout << "  -w : Write motor configuration to flash." << std::endl;
-  std::cout << "  -h : Print this help message." << std::endl;
-}
-
-// Legs are numbered from 1 to 4: Front Right, Front Left, Back Right, Back Left
-// Joints are numbered from 1 to 3: Shoulder, Upper Leg, Lower Leg
-// Motor CAN IDs follow: AB where A is the leg number and B is the joint number
-
-int main(int argc, char *argv[]) {
-  // Handle Ctrl-C signal to stop motors safely
-  signal(SIGINT, signal_callback_handler);
-
-  // Load configuration file from command line argument
-  if (argc < 2) {
-    print_help(argv[0]);
-    return 1;
-  }
-
-  bool configure_motors = false;
-  bool write_motor_config = false;
-
-  for (int i = 2; i < argc; i++) {
-    if (argv[i][0] == '-') {
-      for (int j = 1; argv[i][j] != '\0'; j++) {
-        if (argv[i][j] == 'h') {
-          print_help(argv[0]);
-          return 0;
-        }
-        if (argv[i][j] == 'w')
-          write_motor_config = true;
-        if (argv[i][j] == 'c')
-          configure_motors = true;
-        else {
-          std::cerr << "Unknown option: -" << argv[i][j] << std::endl;
-          print_help(argv[0]);
-          return 1;
-        }
-      }
-    }
-  }
-
-  std::string config_file = argv[1];
-
-  // Load and parse the YAML configuration file
-  std::cout << "Starting robot with config file " << config_file << std::endl;
-  YAML::Node config = YAML::LoadFile(config_file);
-
-  if (robot.configure(config, configure_motors, write_motor_config) != 0) {
-    std::cerr << "Failed to configure robot." << std::endl;
-    return 1;
-  }
-
-  if (robot.init() != 0) {
-    std::cerr << "Failed to initialize robot." << std::endl;
-    return 1;
-  }
-
-  std::cout << "Running..." << std::endl;
-  while (true) {
-    robot.loop(10000);
-    ::usleep(10000);
-  }
-
-  return 0;
-}
-
-void Robot::loop(int us) {
-  // queryMotors();
-  if (teleop.readGamepad() != 0) {
-    std::cerr << "Error reading gamepad input." << std::endl;
-  } else {
-    teleop.printGamepad();
-  }
-  // gotoZero();
-  // printMotorStatus();
-}
-
-using Transport = pi3hat::Pi3HatMoteusTransport;
 
 // variables prefixed with c_ are YAML nodes
 int Robot::configure(YAML::Node conf, bool configure_motors,
                      bool write_motor_config) {
+  using Transport = pi3hat::Pi3HatMoteusTransport;
   if (configured) {
     std::cerr << "Robot is already configured." << std::endl;
     return -1;
@@ -140,6 +49,9 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
   float footRadius = c_leg["footRadius"].as<float>();
   // for (int i = 1; i <= 4; i++)
   //     legs[i] = new Leg(lengths, footRadius);
+
+  lower_min = c_leg["lowerMin"].as<double>();
+  lower_max = c_leg["lowerMax"].as<double>();
 
   // Create chassis
   const auto &c_chassis = conf["chassis"];
@@ -216,6 +128,167 @@ int Robot::init() {
   return 0;
 }
 
+void Robot::loop(unsigned int us) {
+  prev_state = state;
+  // Change State
+  switch (state) {
+  case IDLE: {
+    if (teleop.home_joints) {
+      state = HOMING;
+    } else if (teleop.deploy_legs) {
+      if (legs_deployed) {
+        state = DEPLOY_C;
+      } else {
+        state = DEPLOY_A;
+      }
+    }
+  } break;
+  case HOMING: {
+    if (!teleop.home_joints) {
+      state = IDLE;
+    }
+  } break;
+  case DEPLOY_A:
+  case DEPLOY_B:
+  case DEPLOY_C: {
+    if (!teleop.deploy_legs) {
+      state = IDLE;
+    }
+  } break;
+  case RUNNING: {
+    if (teleop.home_joints) {
+      state = IDLE;
+    }
+    state = IDLE;
+  } break;
+  }
+  // Act on State
+  switch (state) {
+  case IDLE: {
+    stopMotors();
+  } break;
+  case HOMING: {
+    if (homeMotors() == 1) {
+      teleop.home_joints = false;
+      state = IDLE;
+    }
+  } break;
+  case DEPLOY_A: {
+    if (gotoPose(deploy_a_cmds) == 1) {
+      if (legs_deployed) {
+        teleop.deploy_legs = false;
+        legs_deployed = false;
+        state = IDLE;
+      } else {
+        state = DEPLOY_B;
+      }
+    }
+  } break;
+  case DEPLOY_B: {
+    if (gotoPose(deploy_b_cmds) == 1) {
+      if (legs_deployed) {
+        state = DEPLOY_A;
+      } else {
+        state = DEPLOY_C;
+      }
+    }
+  } break;
+  case DEPLOY_C: {
+    if (gotoPose(deploy_c_cmds) == 1) {
+      if (legs_deployed) {
+        state = DEPLOY_B;
+      } else {
+        state = IDLE;
+        teleop.deploy_legs = false;
+        legs_deployed = true;
+      }
+    }
+  } break;
+  case RUNNING: {
+    holdPosition();
+  } break;
+  }
+
+  if (teleop.readGamepad() != 0) {
+    std::cerr << "Error reading gamepad input." << std::endl;
+  } else {
+    // teleop.printGamepad();
+  }
+  queryMotors();
+  printMotorStatus();
+}
+
+int Robot::homeMotors() {
+  // motorState[13] = motors[13]->SetPosition(homing_right_cmd)->values;
+  motorState[23] =
+      motors[23]->SetPosition(homing_left_cmd, &homing_pos_fmt)->values;
+  // motorState[33] = motors[33]->SetPosition(homing_right_cmd)->values;
+  motorState[43] =
+      motors[43]->SetPosition(homing_left_cmd, &homing_pos_fmt)->values;
+  if (prev_state != HOMING ||
+      (motorState[13].mode == moteus::Mode::kPosition &&
+       motorState[13].fault != 102) ||
+      (motorState[23].mode == moteus::Mode::kPosition &&
+       motorState[23].fault != 102) ||
+      (motorState[33].mode == moteus::Mode::kPosition &&
+       motorState[33].fault != 102) ||
+      (motorState[43].mode == moteus::Mode::kPosition &&
+       motorState[43].fault != 102))
+    return 0;
+  stopMotors();
+
+  // Set home positions for shoulder and upper leg joints
+  motors[11]->DiagnosticCommand("d cfg-set-output -0.25");
+  motors[21]->DiagnosticCommand("d cfg-set-output 0.25");
+  motors[31]->DiagnosticCommand("d cfg-set-output 0.25");
+  motors[41]->DiagnosticCommand("d cfg-set-output -0.25");
+  motors[12]->DiagnosticCommand("d cfg-set-output 0.0");
+  motors[22]->DiagnosticCommand("d cfg-set-output 0.0");
+  motors[32]->DiagnosticCommand("d cfg-set-output 0.0");
+  motors[42]->DiagnosticCommand("d cfg-set-output 0.0");
+  std::string left_lower_str =
+      std::format("d cfg-set-output {:.4f}", lower_min);
+  std::string right_lower_str =
+      std::format("d cfg-set-output {:.4f}", -lower_min);
+  motors[13]->DiagnosticCommand(right_lower_str);
+  motors[23]->DiagnosticCommand(left_lower_str);
+  motors[33]->DiagnosticCommand(right_lower_str);
+  motors[43]->DiagnosticCommand(left_lower_str);
+  return 1;
+}
+
+int Robot::gotoPose(std::map<int, double> jointPose) {
+  bool all_reached = true;
+  for (auto &pose_pair : jointPose) {
+    int id = pose_pair.first;
+    double position = pose_pair.second;
+    moteus::Controller *motor = motors[id];
+
+    PosFmt pos_fmt{
+        .position = moteus::kFloat,
+        .velocity = moteus::kFloat,
+        .maximum_torque = moteus::kFloat,
+        .velocity_limit = moteus::kFloat,
+    };
+    PosCmd cmd;
+    cmd.position = position;
+    cmd.velocity = NaN;
+    cmd.velocity_limit = 1.0;
+    cmd.maximum_torque = 1.5;
+
+    const auto state = motor->SetPosition(cmd, &pos_fmt);
+    motorState[id] = state->values;
+    if (std::abs(state->values.position - position) > 0.01) {
+      all_reached = false;
+    }
+  }
+  if (all_reached) {
+    return 1;
+  }
+
+  return 0;
+}
+
 void Robot::queryMotors() {
   for (auto &motor_pair : motors) {
     int id = motor_pair.first;
@@ -257,7 +330,7 @@ void Robot::gotoZero() {
       continue;
     moteus::Controller *motor = motor_pair.second;
 
-    moteus::PositionMode::Command cmd;
+    PosCmd cmd;
     cmd.position = 0.0;
     cmd.velocity = NaN;
     cmd.feedforward_torque = 0.0;
@@ -268,19 +341,38 @@ void Robot::gotoZero() {
 }
 
 void Robot::printMotorStatus() {
+  switch (state) {
+  case IDLE: {
+    ::printf(
+        "State: IDLE                                                   \n");
+  } break;
+  case HOMING: {
+    ::printf(
+        "State: HOMING                                                 \n");
+  } break;
+  case DEPLOY_A: {
+    ::printf(
+        "State: DEPLOY_A                                               \n");
+  } break;
+  case RUNNING: {
+    ::printf(
+        "State: RUNNING                                                \n");
+  } break;
+  }
+
   for (auto &state_pair : motorState) {
     int id = state_pair.first;
     const auto &r = state_pair.second;
     if (isnanl(r.position)) {
-      ::printf(
-          "%2d:  No data                                                 \n",
-          id);
+      ::printf("%2d:  No data                                              "
+               "   \n",
+               id);
       continue;
     }
     ::printf("%2d: %3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)   \n",
              id, static_cast<int>(r.mode), r.position, r.velocity, r.torque,
              r.voltage, r.temperature, r.fault);
   }
-  ::printf("\033[%dA", motorState.size());
+  ::printf("\033[%dA", motorState.size() + 1);
   ::fflush(stdout);
 }

@@ -52,7 +52,7 @@ int Teleop::readGamepad() {
       switch (ev.code) {
       case BTN_START: {
         if (ev.value == 1) {
-          enable_motors = !enable_motors;
+          deploy_legs = !deploy_legs;
         }
       } break;
       case BTN_SELECT: {
@@ -73,7 +73,9 @@ int Teleop::readGamepad() {
 }
 
 void Teleop::printGamepad() {
-  std::cout << "Gamepad State: vx=" << vx << " vy=" << vy << " wz=" << wz
-            << " enable_motors=" << enable_motors
-            << " home_joints=" << home_joints << std::endl;
+  ::printf("Gamepad State: vx=%+1.4f vy=%+1.4f wz=%+1.4f "
+           "deploy_legs=%d home_joints=%d\r",
+           vx / 32768.0, vy / 32768.0, wz / 32768.0, deploy_legs,
+           home_joints);
+  ::fflush(stdout);
 }

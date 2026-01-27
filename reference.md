@@ -4,7 +4,7 @@ This is a collection of info that may or may not be important for this project.
 
 ## moteus fault codes
 
-From [the docs](https://mjbots.github.io/moteus/protocol/registers/#0x00f-fault-code):
+From [the docs](https://mjbots.github.io/moteus/protocol/registers#0x00f-fault-code):
 
 
  > A fault code which will be set if the primary mode is 1 (Fault).
@@ -37,6 +37,43 @@ From [the docs](https://mjbots.github.io/moteus/protocol/registers/#0x00f-fault-
  >  * 101 - servo.motor_fault_temperature
  >  * 102 - the commanded maximum torque
  >  * 103 - servopos.position_min or servopos.position_max
+
+## Output Limit Reasons
+
+From [the docs](https://mjbots.github.io/moteus/troubleshooting/limited-torque#output-limit-reasons):
+
+ > As of firmware version 2025-07-21, the firmware will report if a factor is limiting the output current via the "fault" register while in position mode. The set of possible values are:
+ > 
+ > * **96 max_velocity:** Maximum velocity: If the observed velocity exceeds the configured maximum velocity, torque is limited in the direction that would cause the velocity to increase. This is configured with servo.max_velocity.
+ > * **97 max_power:** Maximum power: The total power of the output is limited through a combination of a board power profile and servo.max_power_W. See this post for more.
+ > * **98 BEMF:** Maximum system voltage: The supply voltage, combined with the back EMF of the motor and the phase resistance does not permit more current to be applied.
+ > * **99 max_current:** Maximum current: There is a system wide maximum output phase current that is configured in servo.max_current_A.
+ > * **100 fault_temperature:** Temperature: The onboard FET temperature sensor can limit the output current. This threshold is set in the current firmware with servo.fault_temperature/servo.temperature_margin.
+ > * **101 motor_temperature:** Temperature: The motor temperature sensor can also limit the output current. This is configured in servo.motor_fault_temperature/servo.motor_temperature_margin.
+ > * **102 max_torque:** Maximum torque: With each position mode command, the client can specify a maximum torque to use. If the combination of the onboard PID and commanded feedforward torque exceeds this, then limiting occurs.
+ > * **103 position_bounds:** Position bounds: If the current position is outside of servopos.position_min and servopos.position_max, then torque is limited in the direction that would push the motor further outside the bounds.
+ > * **104 flux_braking:** Flux braking: The input voltage is too high and the controller is dissipating energy in the motor windings.
+
+
+## Moteus control modes
+ > ```
+ > kStopped = 0,
+ > kFault = 1,
+ > kEnabling = 2,
+ > kCalibrating = 3,
+ > kCalibrationComplete = 4,
+ > kPwm = 5,
+ > kVoltage = 6,
+ > kVoltageFoc = 7,
+ > kVoltageDq = 8,
+ > kCurrent = 9,
+ > kPosition = 10,
+ > kPositionTimeout = 11,
+ > kZeroVelocity = 12,
+ > kStayWithin = 13,
+ > kMeasureInd = 14,
+ > kBrake = 15,
+ > ```
 
 # Custom fastfetch icon/config
 `~/.config/fastfetch/config.jsonc`

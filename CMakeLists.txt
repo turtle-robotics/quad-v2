@@ -27,14 +27,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-set(SDL_STATIC true)
-FetchContent_Declare(
-  SDL3
-  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-  GIT_TAG main
-)
-FetchContent_MakeAvailable(SDL3)
-
 FetchContent_Declare(
   moteus
   GIT_REPOSITORY https://github.com/mjbots/moteus.git
@@ -49,22 +41,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(pi3hat)
 
-add_executable(quad src/Robot.cpp src/Chassis.cpp src/Leg.cpp src/Teleop.cpp)
+add_executable(quad src/main.cpp src/Robot.cpp src/Chassis.cpp src/Leg.cpp src/Teleop.cpp)
 
 target_include_directories(quad PUBLIC include)
 target_link_libraries(quad PUBLIC Eigen3::Eigen yaml-cpp::yaml-cpp moteus::cpp pi3hat::pi3hat)# -static)
-# target_compile_features(quad PRIVATE cxx_std_20)
+target_compile_features(quad PRIVATE cxx_std_20)
 # target_compile_definitions(quad PRIVATE QUAD_V1=1)
-
-# separate motor test executable
-add_executable(motor_test src/sdl_test.cpp)
-target_include_directories(motor_test PUBLIC include)
-# target_link_libraries(motor_test PRIVATE SDL3::SDL3-static)
 
 # Upload to robot after build
 add_custom_command(TARGET quad POST_BUILD COMMAND rsync -z $<TARGET_FILE:quad> "${remote_user}@${remote_host}:/home/${remote_user}/quad")
 add_custom_command(TARGET quad POST_BUILD COMMAND rsync -rz configs "${remote_user}@${remote_host}:/home/${remote_user}/")
-add_custom_command(TARGET motor_test POST_BUILD COMMAND rsync -z $<TARGET_FILE:motor_test> "${remote_user}@${remote_host}:/home/${remote_user}/motor_test")
 
 get_target_property(OUT quad LINK_LIBRARIES)
 message(STATUS ${OUT})

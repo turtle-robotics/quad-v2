@@ -13,7 +13,7 @@ public:
   void printGamepad();
 
   double vx, vy, wz;
-  bool home_joints, enable_motors;
+  bool home_joints, deploy_legs;
 
 private:
   std::string gamepad_path;

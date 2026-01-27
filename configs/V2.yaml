@@ -7,6 +7,8 @@ leg:
   upperLen: 0.192 # m
   lowerLen: 0.192 # m
   footRadius: 0.020 # m
+  lowerMin: 0.099
+  lowerMax: 0.417
 servomap:
   1: [11,12,13]
   2: [21,22,23]
@@ -16,10 +18,10 @@ servomap:
 motor_config:
   - servopos.position_max nan
   - servopos.position_min nan
-  - servo.pid_position.kp 50
-  - servo.pid_position.ki 1
-  - servo.pid_position.kd 10
-  - servo.pid_position.ilimit 0.2
+  - servo.pid_position.kp 100.0
+  - servo.pid_position.ki 10.0
+  - servo.pid_position.kd 10.0
+  - servo.pid_position.ilimit 20.0
   - servo.max_velocity 10.0
   - servo.default_velocity_limit 8.0
   - servo.default_accel_limit 20.0
