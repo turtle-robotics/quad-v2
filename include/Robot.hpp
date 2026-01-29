@@ -16,7 +16,6 @@ using PosFmt = moteus::PositionMode::Format;
 class Robot {
 public:
   Robot() {};
-  // Robot(Chassis chassis) : chassis{chassis} {};
 
   // Configure robot using a YAML configuration file
   int configure(YAML::Node conf, bool configure_motors,
@@ -29,7 +28,7 @@ public:
   void holdPosition();
   void gotoZero();
   void printMotorStatus();
-  int gotoPose(std::map<int, double> jointPose);
+  int gotoPose(std::map<int, double> jointPose, double max_torque = NaN);
 
   int homeMotors();
 
@@ -65,48 +64,38 @@ private:
       .maximum_torque = moteus::kFloat,
       .ignore_position_bounds = moteus::kFloat,
   };
-  PosCmd homing_left_cmd{
+  PosCmd homing_cmd{
       .position = NaN,
       .velocity = -0.1,
       .maximum_torque = max_homing_torque,
       .ignore_position_bounds = 1.0,
   };
-  PosCmd homing_right_cmd{
-      .position = NaN,
-      .velocity = 0.1,
-      .maximum_torque = max_homing_torque,
-      .ignore_position_bounds = 1.0,
-  };
 
+  double deploy_torque = 1.5; // N m
   // Deployment parameters
   std::map<int, double> deploy_a_cmds{
-      // {11, -0.25}, {12, 0.0}, {13, -0.125},
-      // {21, 0.25},
-      // {22, 0.0},
-      // {23, 0.1},
-      // {31, -0.25}, {32, 0.0}, {33, -0.125},
-      {41, -0.25},
-      {42, 0.0},
-      {43, 0.1},
+      {11, 0.250}, {12, 0.000}, {13, 0.100}, //
+      {21, 0.250}, {22, 0.000}, {23, 0.100}, //
+      {31, 0.250}, {32, 0.000}, {33, 0.100}, //
+      {41, 0.250}, {42, 0.000}, {43, 0.100}, //
   };
   std::map<int, double> deploy_b_cmds{
-      // {11, -0.25}, {12, 0.0}, {13, -0.125},
-      // {21, 0.125},
-      // {22, 0.125},
-      // {23, 0.1},
-      // {31, -0.25}, {32, 0.0}, {33, -0.125},
-      {41, -0.125},
-      {42, 0.125},
-      {43, 0.1},
+      {11, 0.125}, {12, 0.125}, {13, 0.100}, //
+      {21, 0.125}, {22, 0.125}, {23, 0.100}, //
+      {31, 0.125}, {32, 0.125}, {33, 0.100}, //
+      {41, 0.125}, {42, 0.125}, {43, 0.100}, //
   };
   std::map<int, double> deploy_c_cmds{
-      // {11, -0.25}, {12, 0.0}, {13, -0.125},
-      // {21, 0.0},
-      // {22, 0.125},
-      // {23, 0.1},
-      // {31, -0.25}, {32, 0.0}, {33, -0.125},
-      {41, 0.0},
-      {42, 0.125},
-      {43, 0.1},
+      {11, 0.000}, {12, 0.125}, {13, 0.100}, //
+      {21, 0.000}, {22, 0.125}, {23, 0.100}, //
+      {31, 0.000}, {32, 0.125}, {33, 0.100}, //
+      {41, 0.000}, {42, 0.125}, {43, 0.100}, //
+  };
+
+  std::map<int, double> stand_cmds{
+      {11, 0.000}, {12, -0.090}, {13, 0.250}, //
+      {21, 0.000}, {22, -0.090}, {23, 0.250}, //
+      {31, 0.000}, {32, -0.090}, {33, 0.250}, //
+      {41, 0.000}, {42, -0.090}, {43, 0.250}, //
   };
 };

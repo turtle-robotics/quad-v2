@@ -156,10 +156,17 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case RUNNING: {
+    // Homing not allowed while running
     if (teleop.home_joints) {
-      state = IDLE;
+      teleop.home_joints = false;
     }
-    state = IDLE;
+    if (teleop.deploy_legs) {
+      if (legs_deployed) {
+        state = DEPLOY_C;
+      } else {
+        state = DEPLOY_A;
+      }
+    }
   } break;
   }
   // Act on State
@@ -174,7 +181,7 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case DEPLOY_A: {
-    if (gotoPose(deploy_a_cmds) == 1) {
+    if (gotoPose(deploy_a_cmds, deploy_torque) == 1) {
       if (legs_deployed) {
         teleop.deploy_legs = false;
         legs_deployed = false;
@@ -185,7 +192,7 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case DEPLOY_B: {
-    if (gotoPose(deploy_b_cmds) == 1) {
+    if (gotoPose(deploy_b_cmds, deploy_torque) == 1) {
       if (legs_deployed) {
         state = DEPLOY_A;
       } else {
@@ -194,18 +201,18 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case DEPLOY_C: {
-    if (gotoPose(deploy_c_cmds) == 1) {
+    if (gotoPose(deploy_c_cmds, deploy_torque) == 1) {
       if (legs_deployed) {
         state = DEPLOY_B;
       } else {
-        state = IDLE;
+        state = RUNNING;
         teleop.deploy_legs = false;
         legs_deployed = true;
       }
     }
   } break;
   case RUNNING: {
-    holdPosition();
+    gotoPose(stand_cmds);
   } break;
   }
 
@@ -219,12 +226,10 @@ void Robot::loop(unsigned int us) {
 }
 
 int Robot::homeMotors() {
-  // motorState[13] = motors[13]->SetPosition(homing_right_cmd)->values;
-  motorState[23] =
-      motors[23]->SetPosition(homing_left_cmd, &homing_pos_fmt)->values;
-  // motorState[33] = motors[33]->SetPosition(homing_right_cmd)->values;
-  motorState[43] =
-      motors[43]->SetPosition(homing_left_cmd, &homing_pos_fmt)->values;
+  motorState[13] = motors[13]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+  motorState[23] = motors[23]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+  motorState[33] = motors[33]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+  motorState[43] = motors[43]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
   if (prev_state != HOMING ||
       (motorState[13].mode == moteus::Mode::kPosition &&
        motorState[13].fault != 102) ||
@@ -236,28 +241,25 @@ int Robot::homeMotors() {
        motorState[43].fault != 102))
     return 0;
   stopMotors();
-
+  ::usleep(1000000); // wait for motors to settle
   // Set home positions for shoulder and upper leg joints
-  motors[11]->DiagnosticCommand("d cfg-set-output -0.25");
+  motors[11]->DiagnosticCommand("d cfg-set-output 0.25");
   motors[21]->DiagnosticCommand("d cfg-set-output 0.25");
   motors[31]->DiagnosticCommand("d cfg-set-output 0.25");
-  motors[41]->DiagnosticCommand("d cfg-set-output -0.25");
+  motors[41]->DiagnosticCommand("d cfg-set-output 0.25");
   motors[12]->DiagnosticCommand("d cfg-set-output 0.0");
   motors[22]->DiagnosticCommand("d cfg-set-output 0.0");
   motors[32]->DiagnosticCommand("d cfg-set-output 0.0");
   motors[42]->DiagnosticCommand("d cfg-set-output 0.0");
-  std::string left_lower_str =
-      std::format("d cfg-set-output {:.4f}", lower_min);
-  std::string right_lower_str =
-      std::format("d cfg-set-output {:.4f}", -lower_min);
-  motors[13]->DiagnosticCommand(right_lower_str);
-  motors[23]->DiagnosticCommand(left_lower_str);
-  motors[33]->DiagnosticCommand(right_lower_str);
-  motors[43]->DiagnosticCommand(left_lower_str);
+  std::string lower_str = std::format("d cfg-set-output {:.4f}", lower_min);
+  motors[13]->DiagnosticCommand(lower_str);
+  motors[23]->DiagnosticCommand(lower_str);
+  motors[33]->DiagnosticCommand(lower_str);
+  motors[43]->DiagnosticCommand(lower_str);
   return 1;
 }
 
-int Robot::gotoPose(std::map<int, double> jointPose) {
+int Robot::gotoPose(std::map<int, double> jointPose, double max_torque) {
   bool all_reached = true;
   for (auto &pose_pair : jointPose) {
     int id = pose_pair.first;
@@ -274,7 +276,7 @@ int Robot::gotoPose(std::map<int, double> jointPose) {
     cmd.position = position;
     cmd.velocity = NaN;
     cmd.velocity_limit = 1.0;
-    cmd.maximum_torque = 1.5;
+    cmd.maximum_torque = max_torque;
 
     const auto state = motor->SetPosition(cmd, &pos_fmt);
     motorState[id] = state->values;
@@ -353,6 +355,14 @@ void Robot::printMotorStatus() {
   case DEPLOY_A: {
     ::printf(
         "State: DEPLOY_A                                               \n");
+  } break;
+  case DEPLOY_B: {
+    ::printf(
+        "State: DEPLOY_B                                               \n");
+  } break;
+  case DEPLOY_C: {
+    ::printf(
+        "State: DEPLOY_C                                               \n");
   } break;
   case RUNNING: {
     ::printf(
