@@ -29,3 +29,5 @@ void Leg::ik(Eigen::Vector3f p, Eigen::Vector3f &theta) {
              acosf((powf(l2, 2) + d2 - powf(l3, 2)) / (2.0f * l2 * sqrtf(d2)));
   theta[2] = acosf((powf(l2, 2) + powf(l3, 2) - d2) / (2.0f * l2 * l3));
 }
+
+void fd(Eigen::Vector3f theta, Eigen::Vector3f theta_d, Eigen::Vector3f &p_d) {}

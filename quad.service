@@ -1,0 +1,8 @@
+[Unit]
+Description=QUAD V2 Robot Code
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/home/quad/quad /home/quad/configs/V2.yaml
+Restart=always

@@ -26,8 +26,7 @@ public:
   void stopMotors();
   void queryMotors();
   void holdPosition();
-  void gotoZero();
-  void printMotorStatus();
+  void printStatus();
   int gotoPose(std::map<int, double> jointPose, double max_torque = NaN);
 
   int homeMotors();
@@ -48,6 +47,10 @@ private:
     RUNNING
   } state = IDLE,
     prev_state = IDLE;
+  std::map<state_t, std::string> state_names{
+      {IDLE, "IDLE"},         {HOMING, "HOMING"},     {DEPLOY_A, "DEPLOY_A"},
+      {DEPLOY_B, "DEPLOY_B"}, {DEPLOY_C, "DEPLOY_C"}, {RUNNING, "RUNNING"},
+  };
   std::map<int, Leg *> legs;
   std::map<int, moteus::Controller *> motors;
   std::map<int, moteus::Query::Result> motorState;
@@ -70,6 +73,8 @@ private:
       .maximum_torque = max_homing_torque,
       .ignore_position_bounds = 1.0,
   };
+
+  char lower_str[64];
 
   double deploy_torque = 1.5; // N m
   // Deployment parameters

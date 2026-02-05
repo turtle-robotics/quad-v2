@@ -1,6 +1,5 @@
 #include "Robot.hpp"
 
-#include <format>
 #include <iostream>
 
 // variables prefixed with c_ are YAML nodes
@@ -222,7 +221,7 @@ void Robot::loop(unsigned int us) {
     // teleop.printGamepad();
   }
   queryMotors();
-  printMotorStatus();
+  printStatus();
 }
 
 int Robot::homeMotors() {
@@ -251,7 +250,11 @@ int Robot::homeMotors() {
   motors[22]->DiagnosticCommand("d cfg-set-output 0.0");
   motors[32]->DiagnosticCommand("d cfg-set-output 0.0");
   motors[42]->DiagnosticCommand("d cfg-set-output 0.0");
-  std::string lower_str = std::format("d cfg-set-output {:.4f}", lower_min);
+  std::ostringstream stringStream;
+  stringStream << "Hello";
+  std::string copyOfStr = stringStream.str();
+
+  ::sprintf(lower_str, "d cfg-set-output %.4f", lower_min);
   motors[13]->DiagnosticCommand(lower_str);
   motors[23]->DiagnosticCommand(lower_str);
   motors[33]->DiagnosticCommand(lower_str);
@@ -325,63 +328,20 @@ void Robot::holdPosition() {
   }
 }
 
-void Robot::gotoZero() {
-  for (auto &motor_pair : motors) {
-    int id = motor_pair.first;
-    if (id < 20 || id > 23 && (id < 40 || id > 43))
-      continue;
-    moteus::Controller *motor = motor_pair.second;
-
-    PosCmd cmd;
-    cmd.position = 0.0;
-    cmd.velocity = NaN;
-    cmd.feedforward_torque = 0.0;
-
-    const auto state = motor->SetPosition(cmd);
-    motorState[id] = state->values;
-  }
-}
-
-void Robot::printMotorStatus() {
-  switch (state) {
-  case IDLE: {
-    ::printf(
-        "State: IDLE                                                   \n");
-  } break;
-  case HOMING: {
-    ::printf(
-        "State: HOMING                                                 \n");
-  } break;
-  case DEPLOY_A: {
-    ::printf(
-        "State: DEPLOY_A                                               \n");
-  } break;
-  case DEPLOY_B: {
-    ::printf(
-        "State: DEPLOY_B                                               \n");
-  } break;
-  case DEPLOY_C: {
-    ::printf(
-        "State: DEPLOY_C                                               \n");
-  } break;
-  case RUNNING: {
-    ::printf(
-        "State: RUNNING                                                \n");
-  } break;
-  }
+void Robot::printStatus() {
+  ::printf("\033[2KState: %s\n", state_names[state].c_str());
 
   for (auto &state_pair : motorState) {
     int id = state_pair.first;
     const auto &r = state_pair.second;
     if (isnanl(r.position)) {
-      ::printf("%2d:  No data                                              "
-               "   \n",
-               id);
+      ::printf("\033[2K%2d: No data\n", id);
       continue;
     }
-    ::printf("%2d: %3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)   \n",
-             id, static_cast<int>(r.mode), r.position, r.velocity, r.torque,
-             r.voltage, r.temperature, r.fault);
+    ::printf(
+        "\033[2K%2d: %3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)\n",
+        id, static_cast<int>(r.mode), r.position, r.velocity, r.torque,
+        r.voltage, r.temperature, r.fault);
   }
   ::printf("\033[%dA", motorState.size() + 1);
   ::fflush(stdout);

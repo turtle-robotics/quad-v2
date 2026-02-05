@@ -45,7 +45,7 @@ add_executable(quad src/main.cpp src/Robot.cpp src/Chassis.cpp src/Leg.cpp src/T
 
 target_include_directories(quad PUBLIC include)
 target_link_libraries(quad PUBLIC Eigen3::Eigen yaml-cpp::yaml-cpp moteus::cpp pi3hat::pi3hat)# -static)
-target_compile_features(quad PRIVATE cxx_std_20)
+# target_compile_features(quad PRIVATE cxx_std_20)
 # target_compile_definitions(quad PRIVATE QUAD_V1=1)
 
 # Upload to robot after build
