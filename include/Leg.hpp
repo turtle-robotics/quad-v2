@@ -6,17 +6,25 @@
 
 class Leg {
 public:
-  Leg(float lengths[3], float r_foot);
+  Leg(double lengths[3], double r_foot);
 
   // Forward Kinematics
-  void fk(Eigen::Vector3f theta, Eigen::Vector3f &p);
+  void fk(Eigen::Vector3d theta, Eigen::Vector3d &p);
 
   // Inverse Kinematics
-  void ik(Eigen::Vector3f p, Eigen::Vector3f &theta);
+  void ik(Eigen::Vector3d p, Eigen::Vector3d &theta);
 
   // Forward Dynamics
-  void fd(Eigen::Vector3f theta, Eigen::Vector3f theta_d, Eigen::Vector3f &p_d);
+  void fd(Eigen::Vector3d theta, Eigen::Vector3d theta_d, Eigen::Vector3d &p_d);
+
+  void trot(const Eigen::Vector2d &v, Eigen::Vector3d &p, useconds_t &dt);
+
+  enum state_t { IDLE, TRAVEL, LIFT } state;
 
 private:
-  float l1, l2, l3, footRadius;
+  double l1, l2, l3, footRadius;
+  double v_r = 0.2;          // m/s, return speed of foot during lift phase
+  double travel = 0.05;      // m
+  double lift_height = 0.05; // m
+  Eigen::Vector2d dp = Eigen::Vector2d::Zero();
 };

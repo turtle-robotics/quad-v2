@@ -60,6 +60,8 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
 
     return -1;
   }
+  chassis_width = c_chassis["width"].as<double>();
+  chassis_length = c_chassis["length"].as<double>();
 
   if (configure_motors) {
     std::cout << "Writing motor configuration..." << std::endl;

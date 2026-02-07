@@ -6,7 +6,7 @@
 #include <pi3hat_moteus_transport.h>
 #include <yaml-cpp/yaml.h>
 
-#include "Chassis.hpp"
+#include "Leg.hpp"
 #include "Teleop.hpp"
 
 using namespace mjbots;
@@ -15,6 +15,7 @@ using PosFmt = moteus::PositionMode::Format;
 
 class Robot {
 public:
+
   Robot() {};
 
   // Configure robot using a YAML configuration file
@@ -51,16 +52,18 @@ private:
       {IDLE, "IDLE"},         {HOMING, "HOMING"},     {DEPLOY_A, "DEPLOY_A"},
       {DEPLOY_B, "DEPLOY_B"}, {DEPLOY_C, "DEPLOY_C"}, {RUNNING, "RUNNING"},
   };
+
+  double chassis_length, chassis_width;
+
   std::map<int, Leg *> legs;
   std::map<int, moteus::Controller *> motors;
   std::map<int, moteus::Query::Result> motorState;
-  Chassis *chassis;
   Teleop teleop;
 
   double lower_min, lower_max;
 
   // Homing parameters
-  double max_homing_torque = 2.5;
+  double max_homing_torque = 3.5;
   PosFmt homing_pos_fmt{
       .position = moteus::kFloat,
       .velocity = moteus::kFloat,
@@ -76,7 +79,7 @@ private:
 
   char lower_str[64];
 
-  double deploy_torque = 1.5; // N m
+  double deploy_torque = 2.5; // N m
   // Deployment parameters
   std::map<int, double> deploy_a_cmds{
       {11, 0.250}, {12, 0.000}, {13, 0.100}, //
@@ -98,9 +101,16 @@ private:
   };
 
   std::map<int, double> stand_cmds{
-      {11, 0.000}, {12, -0.090}, {13, 0.250}, //
-      {21, 0.000}, {22, -0.090}, {23, 0.250}, //
+      {11, 0.000}, {12, -0.110}, {13, 0.250}, //
+      {21, 0.000}, {22, -0.110}, {23, 0.250}, //
       {31, 0.000}, {32, -0.090}, {33, 0.250}, //
       {41, 0.000}, {42, -0.090}, {43, 0.250}, //
+  };
+
+  std::map<int, Eigen::Vector3d> foot_positions{
+      {1, {0.000, 0.010, 0.200}}, //
+      {2, {0.000, 0.010, 0.200}}, //
+      {3, {0.000, 0.010, 0.200}}, //
+      {4, {0.000, 0.010, 0.200}}, //
   };
 };

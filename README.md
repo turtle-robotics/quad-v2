@@ -4,12 +4,19 @@
 This repository contains the source code for the second revision of TURTLE's quadruped project (QUAD).
 
 Dependencies:
- - moteus
  - Eigen 3
- - SDL 3
  - yaml-cpp
+ - mjbots moteus
+ - mjbots pi3hat
 
-CMake command:
+CMake command (run once to configure):
 ```sh
-cmake . -DCMAKE_TOOLCHAIN_FILE=toolchain-aarch64.cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+mkdir -p build
+cd build
+cmake .. --preset rpi
+```
+
+Make command (run after cmake to build):
+```sh
+make
 ```
