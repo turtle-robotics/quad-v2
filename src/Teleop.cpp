@@ -25,10 +25,13 @@ int Teleop::close() { return 0; }
 int Teleop::readGamepad() {
   ssize_t r1 = read(gamepad, events, sizeof events);
   if (r1 == -1)
-    if (errno == EWOULDBLOCK || errno == EAGAIN) // these are fine
+    if (errno == EWOULDBLOCK || errno == EAGAIN) { // these are fine
+      error = false;
       return 0;
-    else
+    } else {
+      error = true;
       return -1; // actual error
+    }
 
   new_event_count = r1 / sizeof(struct input_event);
 
@@ -38,13 +41,13 @@ int Teleop::readGamepad() {
     case EV_ABS: {
       switch (ev.code) {
       case ABS_X: {
-        wz = ev.value;
+        v.y() = ev.value * js_norm;
       } break;
       case ABS_Y: {
-        vx = ev.value;
+        v.x() = -ev.value * js_norm;
       } break;
       case ABS_RX: {
-        vy = ev.value;
+        wz = ev.value * js_norm;
       } break;
       }
     } break;
@@ -69,13 +72,6 @@ int Teleop::readGamepad() {
     }
     total_events++;
   }
+  error = false;
   return 0;
-}
-
-void Teleop::printGamepad() {
-  ::printf("Gamepad State: vx=%+1.4f vy=%+1.4f wz=%+1.4f "
-           "deploy_legs=%d home_joints=%d\r",
-           vx / 32768.0, vy / 32768.0, wz / 32768.0, deploy_legs,
-           home_joints);
-  ::fflush(stdout);
 }

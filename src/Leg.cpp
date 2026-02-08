@@ -1,7 +1,7 @@
 #include "Leg.hpp"
 
-Leg::Leg(double lengths[3], double r_foot)
-    : l1{lengths[0]}, l2{lengths[1]}, l3{lengths[2]}, footRadius{r_foot} {}
+Leg::Leg(double l1, double l2, double l3, double r_foot)
+    : l1{l1}, l2{l2}, l3{l3}, footRadius{r_foot} {}
 
 void Leg::fk(Eigen::Vector3d theta, Eigen::Vector3d &p) {
   double th1 = theta[0];
@@ -22,36 +22,31 @@ void Leg::ik(Eigen::Vector3d p, Eigen::Vector3d &theta) {
   double z = p.z() - footRadius;
   double d2;
 
-  theta[0] = atan2(z, y) - acos(l1 / sqrt(pow(z, 2) + pow(y, 2)));
-  z = sqrt(pow(z, 2) + pow(y, 2) - pow(l1, 2));
-  d2 = pow(x, 2) + pow(z, 2);
-  theta[1] = atan2(z, x) -
-             acos((pow(l2, 2) + d2 - pow(l3, 2)) / (2.0 * l2 * sqrt(d2)));
-  theta[2] = acos((pow(l2, 2) + pow(l3, 2) - d2) / (2.0 * l2 * l3));
+  theta[0] = atan2(z, y) - acos(l1 / sqrt(y * y + z * z));
+  z = sqrt(z * z + y * y - l1 * l1); // z projection on plane of upper/lower leg
+  d2 = x * x + z * z;
+  theta[1] =
+      atan2(z, x) - acos((l2 * l2 + d2 - l3 * l3) / (2.0 * l2 * sqrt(d2)));
+  theta[2] = acos((l2 * l2 + l3 * l3 - d2) / (2.0 * l2 * l3));
 }
 
 void Leg::fd(Eigen::Vector3d theta, Eigen::Vector3d theta_d,
              Eigen::Vector3d &p_d) {}
 
-void Leg::trot(const Eigen::Vector2d &v, Eigen::Vector3d &p, useconds_t &dt) {
-  dp = Eigen::Vector2d::Zero();
+void Leg::walk(Eigen::Vector2d v, useconds_t dt) {
+  Eigen::Vector2d dp = Eigen::Vector2d::Zero();
+  double dt_sec = dt * 1e-6; // convert to seconds
 
   // Modify state based on position
   switch (state) {
   case IDLE: {
-    if (v.norm() > 0.01) {
+    if (v.squaredNorm() > v_min * v_min) {
       state = TRAVEL;
     }
   } break;
   case TRAVEL: {
-    if (p.head<2>().norm() >= travel) {
+    if (p.head<2>().squaredNorm() >= travel2) {
       state = LIFT;
-    }
-  } break;
-  case LIFT: {
-    if (p.head<2>().norm() >= travel) {
-      state = TRAVEL;
-      p.z() = 0.0;
     }
   } break;
   }
@@ -59,16 +54,22 @@ void Leg::trot(const Eigen::Vector2d &v, Eigen::Vector3d &p, useconds_t &dt) {
   // Calculate change in position based on state
   switch (state) {
   case IDLE: {
-    p = Eigen::Vector3d::Zero();
+    p = home_pos;
   } break;
   case TRAVEL: {
-    dp = v * dt;
+    dp = v * dt_sec;
   } break;
   case LIFT: {
-    dp = v_r * v.normalized() * dt;
-    p.z() = lift_height * cos(M_PI_2 * p.head<2>().norm() / travel);
+    p = lift_pos;
+    // p.z() = lift_height * cos(M_PI_2 * p.head<2>().norm() / travel);
   } break;
+  case PLACE: {
+    p.head<2>() = -v.normalized() * travel + home_pos.head<2>();
+    p.z() = home_pos.z();
+  }
   }
 
   p.head<2>() += dp;
+
+  ik(p, theta);
 }

@@ -42,15 +42,16 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
 
   // Create legs
   const auto &c_leg = conf["leg"];
-  float lengths[3] = {c_leg["upperLen"].as<float>(),
-                      c_leg["lowerLen"].as<float>(),
-                      c_leg["shoulderLen"].as<float>()};
-  float footRadius = c_leg["footRadius"].as<float>();
-  // for (int i = 1; i <= 4; i++)
-  //     legs[i] = new Leg(lengths, footRadius);
-
+  double l0 = c_leg["shoulderLen"].as<double>();
+  double l1 = c_leg["upperLen"].as<double>();
+  double l2 = c_leg["lowerLen"].as<double>();
+  double footRadius = c_leg["footRadius"].as<double>();
   lower_min = c_leg["lowerMin"].as<double>();
   lower_max = c_leg["lowerMax"].as<double>();
+  ::sprintf(lower_str, "d cfg-set-output %.4f", lower_min);
+
+  for (int i = 1; i <= 4; i++)
+    legs[i] = new Leg(l0, l1, l2, footRadius);
 
   // Create chassis
   const auto &c_chassis = conf["chassis"];
@@ -182,7 +183,7 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case DEPLOY_A: {
-    if (gotoPose(deploy_a_cmds, deploy_torque) == 1) {
+    if (gotoJointPose(deploy_a_cmds, deploy_torque) == 1) {
       if (legs_deployed) {
         teleop.deploy_legs = false;
         legs_deployed = false;
@@ -193,7 +194,7 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case DEPLOY_B: {
-    if (gotoPose(deploy_b_cmds, deploy_torque) == 1) {
+    if (gotoJointPose(deploy_b_cmds, deploy_torque) == 1) {
       if (legs_deployed) {
         state = DEPLOY_A;
       } else {
@@ -202,7 +203,7 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case DEPLOY_C: {
-    if (gotoPose(deploy_c_cmds, deploy_torque) == 1) {
+    if (gotoJointPose(deploy_c_cmds, deploy_torque) == 1) {
       if (legs_deployed) {
         state = DEPLOY_B;
       } else {
@@ -213,15 +214,31 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case RUNNING: {
-    gotoPose(stand_cmds);
+    for (auto &leg_pair : legs) {
+      int leg_id = leg_pair.first;
+      Eigen::Vector2d v = 0.2 * teleop.v;
+      auto &leg = leg_pair.second;
+      leg->walk(v, us);
+      // printf("Leg %d: v=(%.3f, %.3f), theta=(%.3f, %.3f, %.3f)\n", leg_id,
+      //        v.x(), v.y(), leg->theta[0]* 0.5 * M_1_PI, leg->theta[1] * 0.5 *
+      //        M_1_PI, leg->theta[2] * 0.5 * M_1_PI);
+      std::map<int, double> jointAngles{
+          {leg_id * 10 + 1, leg->theta[0] * 0.5 * M_1_PI},
+          {leg_id * 10 + 2, leg->theta[1] * 0.5 * M_1_PI},
+          {leg_id * 10 + 3, leg->theta[2] * 0.5 * M_1_PI},
+      };
+      if (gotoJointPose(jointAngles) == 1) {
+        if (leg_pair.second->state == Leg::LIFT) {
+          leg_pair.second->state = Leg::PLACE;
+        } else if (leg_pair.second->state == Leg::PLACE) {
+          leg_pair.second->state = Leg::TRAVEL;
+        }
+      }
+    }
   } break;
   }
 
-  if (teleop.readGamepad() != 0) {
-    std::cerr << "Error reading gamepad input." << std::endl;
-  } else {
-    // teleop.printGamepad();
-  }
+  teleop.readGamepad();
   queryMotors();
   printStatus();
 }
@@ -243,28 +260,40 @@ int Robot::homeMotors() {
     return 0;
   stopMotors();
   ::usleep(1000000); // wait for motors to settle
-  // Set home positions for shoulder and upper leg joints
-  motors[11]->DiagnosticCommand("d cfg-set-output 0.25");
-  motors[21]->DiagnosticCommand("d cfg-set-output 0.25");
-  motors[31]->DiagnosticCommand("d cfg-set-output 0.25");
-  motors[41]->DiagnosticCommand("d cfg-set-output 0.25");
-  motors[12]->DiagnosticCommand("d cfg-set-output 0.0");
-  motors[22]->DiagnosticCommand("d cfg-set-output 0.0");
-  motors[32]->DiagnosticCommand("d cfg-set-output 0.0");
-  motors[42]->DiagnosticCommand("d cfg-set-output 0.0");
-  std::ostringstream stringStream;
-  stringStream << "Hello";
-  std::string copyOfStr = stringStream.str();
 
-  ::sprintf(lower_str, "d cfg-set-output %.4f", lower_min);
-  motors[13]->DiagnosticCommand(lower_str);
-  motors[23]->DiagnosticCommand(lower_str);
-  motors[33]->DiagnosticCommand(lower_str);
-  motors[43]->DiagnosticCommand(lower_str);
+  // Set home positions for shoulder and upper leg joints
+  for (auto &motor_pair : motors) {
+    int id = motor_pair.first;
+    if (id % 10 == 1) {
+      motor_pair.second->DiagnosticCommand("d cfg-set-output 0.25");
+    } else if (id % 10 == 2) {
+      motor_pair.second->DiagnosticCommand("d cfg-set-output 0.0");
+    } else if (id % 10 == 3) {
+      motor_pair.second->DiagnosticCommand(lower_str);
+    }
+  }
   return 1;
 }
 
-int Robot::gotoPose(std::map<int, double> jointPose, double max_torque) {
+int Robot::gotoCartesianPose(const std::map<int, Eigen::Vector3d> &legPose,
+                             double max_torque) {
+  std::map<int, double> jointPose;
+  for (auto &pose_pair : legPose) {
+    int leg_id = pose_pair.first;
+    Eigen::Vector3d theta_list = Eigen::Vector3d::Zero();
+    legs[leg_id]->ik(pose_pair.second, theta_list);
+    // Degrees to turns
+    jointPose[leg_id * 10 + 1] = theta_list[0] * 0.5 * M_1_PI;
+    jointPose[leg_id * 10 + 2] = theta_list[1] * 0.5 * M_1_PI;
+    jointPose[leg_id * 10 + 3] = theta_list[2] * 0.5 * M_1_PI;
+  }
+
+  // return gotoJointPose(jointPose, max_torque);
+  return 0;
+}
+
+int Robot::gotoJointPose(const std::map<int, double> &jointPose,
+                         double max_torque) {
   bool all_reached = true;
   for (auto &pose_pair : jointPose) {
     int id = pose_pair.first;
@@ -332,6 +361,13 @@ void Robot::holdPosition() {
 
 void Robot::printStatus() {
   ::printf("\033[2KState: %s\n", state_names[state].c_str());
+  if (teleop.error) {
+    ::printf("\033[2KGamepad: Not Connected\n");
+  } else {
+    ::printf("\033[2KGamepad: v=(%7.3f,%7.3f) wz=%7.3f home=%1d deploy=%1d\n",
+             teleop.v.x(), teleop.v.y(), teleop.wz, teleop.home_joints,
+             teleop.deploy_legs);
+  }
 
   for (auto &state_pair : motorState) {
     int id = state_pair.first;
@@ -340,11 +376,11 @@ void Robot::printStatus() {
       ::printf("\033[2K%2d: No data\n", id);
       continue;
     }
-    ::printf(
-        "\033[2K%2d: %3d p/v/t=(%7.3f,%7.3f,%7.3f)  v/t/f=(%5.1f,%5.1f,%3d)\n",
-        id, static_cast<int>(r.mode), r.position, r.velocity, r.torque,
-        r.voltage, r.temperature, r.fault);
+    ::printf("\033[2K%2d: %3d p/v/t=(%7.3f,%7.3f,%7.3f)  "
+             "v/t/f=(%5.1f,%5.1f,%3d)\n",
+             id, static_cast<int>(r.mode), r.position, r.velocity, r.torque,
+             r.voltage, r.temperature, r.fault);
   }
-  ::printf("\033[%dA", motorState.size() + 1);
+  ::printf("\033[%dA", motorState.size() + 2);
   ::fflush(stdout);
 }

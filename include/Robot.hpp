@@ -15,7 +15,6 @@ using PosFmt = moteus::PositionMode::Format;
 
 class Robot {
 public:
-
   Robot() {};
 
   // Configure robot using a YAML configuration file
@@ -28,7 +27,10 @@ public:
   void queryMotors();
   void holdPosition();
   void printStatus();
-  int gotoPose(std::map<int, double> jointPose, double max_torque = NaN);
+  int gotoCartesianPose(const std::map<int, Eigen::Vector3d> &legPose,
+                        double max_torque = NaN);
+  int gotoJointPose(const std::map<int, double> &jointPose,
+                    double max_torque = NaN);
 
   int homeMotors();
 
@@ -38,6 +40,7 @@ private:
   bool configured = false;
   bool initialized = false;
   bool legs_deployed = false;
+  bool gamepad_error = false;
   // bool enabled = false;
   enum state_t {
     IDLE,
@@ -52,6 +55,7 @@ private:
       {IDLE, "IDLE"},         {HOMING, "HOMING"},     {DEPLOY_A, "DEPLOY_A"},
       {DEPLOY_B, "DEPLOY_B"}, {DEPLOY_C, "DEPLOY_C"}, {RUNNING, "RUNNING"},
   };
+  int last_leg_id = 0;
 
   double chassis_length, chassis_width;
 
@@ -81,33 +85,33 @@ private:
 
   double deploy_torque = 2.5; // N m
   // Deployment parameters
-  std::map<int, double> deploy_a_cmds{
+  const std::map<int, double> deploy_a_cmds{
       {11, 0.250}, {12, 0.000}, {13, 0.100}, //
       {21, 0.250}, {22, 0.000}, {23, 0.100}, //
       {31, 0.250}, {32, 0.000}, {33, 0.100}, //
       {41, 0.250}, {42, 0.000}, {43, 0.100}, //
   };
-  std::map<int, double> deploy_b_cmds{
+  const std::map<int, double> deploy_b_cmds{
       {11, 0.125}, {12, 0.125}, {13, 0.100}, //
       {21, 0.125}, {22, 0.125}, {23, 0.100}, //
       {31, 0.125}, {32, 0.125}, {33, 0.100}, //
       {41, 0.125}, {42, 0.125}, {43, 0.100}, //
   };
-  std::map<int, double> deploy_c_cmds{
+  const std::map<int, double> deploy_c_cmds{
       {11, 0.000}, {12, 0.125}, {13, 0.100}, //
       {21, 0.000}, {22, 0.125}, {23, 0.100}, //
       {31, 0.000}, {32, 0.125}, {33, 0.100}, //
       {41, 0.000}, {42, 0.125}, {43, 0.100}, //
   };
 
-  std::map<int, double> stand_cmds{
+  const std::map<int, double> stand_cmds{
       {11, 0.000}, {12, -0.110}, {13, 0.250}, //
       {21, 0.000}, {22, -0.110}, {23, 0.250}, //
       {31, 0.000}, {32, -0.090}, {33, 0.250}, //
       {41, 0.000}, {42, -0.090}, {43, 0.250}, //
   };
 
-  std::map<int, Eigen::Vector3d> foot_positions{
+  const std::map<int, Eigen::Vector3d> foot_positions{
       {1, {0.000, 0.010, 0.200}}, //
       {2, {0.000, 0.010, 0.200}}, //
       {3, {0.000, 0.010, 0.200}}, //
