@@ -16,8 +16,8 @@ public:
 
   bool error = false;
 
-  double wz;
-  Eigen::Vector2d v;
+  Eigen::Vector<double, 6> V =
+      Eigen::Vector<double, 6>::Zero(); // [wx, wy, wz, vx, vy, vz]
   bool home_joints, deploy_legs;
 
 private:
@@ -26,5 +26,5 @@ private:
   struct input_event events[8];
   int new_event_count = 0;
   int total_events = 0;
-  const int DEADZONE = 9000;
+  const int deadzone = 400;
 };

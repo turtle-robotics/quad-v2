@@ -1,0 +1,167 @@
+#include "Leg.hpp"
+
+LegProperties
+Leg::makeProperties(const int &legNum,
+                    const std::array<JointProperties, njoints> &joints,
+                    const double &rf) {
+  LegProperties leg;
+  leg.l1 = joints[0].l;
+  leg.l2 = joints[1].l;
+  leg.l3 = joints[2].l;
+  leg.rf = rf;
+
+  leg.Slist.col(0) =
+      mr::ScrewToAxis(Eigen::Vector3d{0.0, 0.0, 0.0},
+                      Eigen::Vector3d{xSign[legNum], 0.0, 0.0}, 0.0);
+  leg.Slist.col(1) =
+      mr::ScrewToAxis(Eigen::Vector3d{0.0, ySign[legNum] * leg.l1, 0.0},
+                      Eigen::Vector3d{0.0, ySign[legNum], 0.0}, 0.0);
+  leg.Slist.col(2) =
+      mr::ScrewToAxis(Eigen::Vector3d{-leg.l2, ySign[legNum] * leg.l1, 0.0},
+                      Eigen::Vector3d{0.0, ySign[legNum], 0.0}, 0.0);
+
+  leg.M = mr::RpToTrans(
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d{leg.l3 - leg.l2, ySign[legNum] * leg.l1, 0.0});
+
+  leg.Mlist[0] = mr::RpToTrans(Eigen::Matrix3d::Identity(),
+                               Eigen::Vector3d{0.0, 0.0, 0.0});
+  leg.Mlist[1] =
+      mr::RpToTrans(Eigen::Matrix3d::Identity(),
+                    Eigen::Vector3d{0.0, ySign[legNum] * leg.l1, 0.0});
+  leg.Mlist[2] =
+      mr::RpToTrans(Eigen::Matrix3d::Identity(),
+                    Eigen::Vector3d{-leg.l2, ySign[legNum] * leg.l1, 0.0});
+  leg.Mlist[3] = mr::RpToTrans(
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d{leg.l3 - leg.l2, ySign[legNum] * leg.l1, 0.0});
+
+  for (int i = 0; i < njoints; i++) {
+    leg.Glist[i] = Eigen::DiagonalMatrix<double, 6, 6>{
+        joints[i].ixx, joints[i].iyy, joints[i].izz,
+        joints[i].m,   joints[i].m,   joints[i].m};
+
+    leg.thetaRange(i, 0) = joints[i].thetaMax;
+    leg.thetaRange(i, 1) = joints[i].thetaMin;
+
+    leg.dthetaMax(i) = joints[i].dthetaMax;
+    leg.ddthetaMax(i) = joints[i].ddthetaMax;
+    leg.tauMax(i) = joints[i].tauMax;
+  }
+
+  return leg;
+}
+
+// Forward Kinematics
+void Leg::fk() {
+  double th1 = thetalist[0];
+  double th2 = thetalist[1];
+  double th3 = -thetalist[2] - thetalist[1];
+  double h = l2 * sin(th2) + l3 * sin(th3);
+  double s1 = sin(th1);
+  double c1 = cos(th1);
+
+  pf.x() = -l2 * cos(th2) + l3 * cos(th3);
+  pf.y() = l1 * c1 - h * s1;
+  pf.z() = l1 * s1 + h * c1 + rf;
+}
+
+// Inverse Kinematics
+void Leg::ik() {
+  double x = pf.x();
+  double y = pf.y();
+  double z = pf.z() - rf;
+  double d2;
+
+  thetalist[0] = atan2(z, y) - acos(l1 / sqrt(y * y + z * z));
+  z = sqrt(z * z + y * y - l1 * l1); // z projection on plane of upper/lower leg
+  d2 = x * x + z * z;
+  thetalist[1] =
+      atan2(z, x) - acos((l2 * l2 + d2 - l3 * l3) / (2.0 * l2 * sqrt(d2)));
+  thetalist[2] = -acos((l2 * l2 + l3 * l3 - d2) / (2.0 * l2 * l3));
+}
+
+void Leg::id(const Eigen::Vector3d &g) {
+  Eigen::Vector<double, 6> Ftip; // N*m, N
+  Ftip << Eigen::Vector3d::Zero(), ff;
+  taulist = mr::InverseDynamics<njoints>(thetalist, dthetalist, ddthetalist, g,
+                                         Ftip, Mlist, Glist, Slist);
+}
+
+void Leg::run() {
+  ik();
+  id({0.0, 0.0, 9.81});
+}
+
+// void Leg::home() {
+//   fmts[0] = fmt_home;
+//   fmts[1] = fmt_home;
+//   fmts[2] = fmt_home;
+//   cmds[0] = PosCmd{};
+//   cmds[1] = PosCmd{};
+//   cmds[2] = cmd_home;
+// }
+
+// void Leg::walk(const Eigen::Vector3d &v, useconds_t dt) {
+//   Eigen::Vector3d v_copy = v;
+//   v_copy.z() = 0; // ignore vertical velocity for now
+//   Eigen::Vector3d dp = Eigen::Vector3d::Zero();
+//   double dt_sec = dt * 1e-6; // convert to seconds
+
+//   // Modify state based on position
+//   if (v_copy.squaredNorm() < v_min * v_min)
+//     state = IDLE;
+//   switch (state) {
+//   case IDLE: {
+//     if (v_copy.squaredNorm() > v_min * v_min) {
+//       state = TRAVEL;
+//     }
+//   } break;
+//   case TRAVEL: {
+//     if ((p - home_pos).squaredNorm() > travel2) {
+//       state = LIFT;
+//     }
+//   } break;
+//   }
+
+//   // Calculate change in position based on state
+//   switch (state) {
+//   case IDLE: {
+//     p = home_pos + Eigen::Vector3d(travel * 3 / 5 * legNum - travel, 0, 0);
+//   } break;
+//   case TRAVEL: {
+//     dp = v_copy * dt_sec;
+//   } break;
+//   case LIFT: {
+//     p = lift_pos;
+//     // p.z() = lift_height * cos(M_PI_2 * p.head<2>().norm() / travel);
+//   } break;
+//   case PLACE: {
+//     p = -v_copy.normalized() * travel * 0.98 + home_pos;
+//   }
+//   }
+
+//   p += dp;
+//   // t += dt;
+//   // p = f();
+
+//   ik(p, theta);
+// }
+
+// Eigen::Vector3d Leg::f() {
+//   // Given time t that goes from 0 to 1
+//   double phase = fmod(t / 1e6, 1.0);
+
+//   // If t is in the first half of the cycle, interpolate from home_pos to
+//   // lift_pos
+//   if (phase < 0.5) {
+//     double alpha = phase / 0.5; // Normalize to [0, 1]
+//     return home_pos * (1 - alpha) + lift_pos * alpha;
+//   }
+//   // If t is in the second half of the cycle, interpolate from lift_pos to
+//   // home_pos
+//   else {
+//     double alpha = (phase - 0.5) / 0.5; // Normalize to [0, 1]
+//     return lift_pos * (1 - alpha) + home_pos * alpha;
+//   }
+// }

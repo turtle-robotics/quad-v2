@@ -39,15 +39,21 @@ int Teleop::readGamepad() {
     auto &ev = events[evi];
     switch (ev.type) {
     case EV_ABS: {
+      if (::abs(ev.value) < deadzone) {
+        ev.value = 0;
+      }
       switch (ev.code) {
       case ABS_X: {
-        v.y() = ev.value * js_norm;
+        V[4] = ev.value * js_norm;
       } break;
       case ABS_Y: {
-        v.x() = -ev.value * js_norm;
+        V[3] = -ev.value * js_norm;
       } break;
       case ABS_RX: {
-        wz = ev.value * js_norm;
+        V[2] = ev.value * js_norm;
+      } break;
+      case ABS_RY: {
+        V[5] = ev.value * js_norm;
       } break;
       }
     } break;

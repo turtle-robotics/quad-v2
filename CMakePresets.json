@@ -5,8 +5,7 @@
       "name": "rpi",
       "displayName": "Cross Compile for Raspberry Pi",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain-aarch64.cmake",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain-aarch64.cmake"
       }
     },
     {

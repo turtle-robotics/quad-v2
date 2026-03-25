@@ -6,11 +6,13 @@ project(
 
 include(FetchContent)
 
+enable_testing()
+
 # Remote deployment settings
 set(remote_user quad)
 set(remote_host quad2.local)
 
-set(CMAKE_CXX_FLAGS -static-libstdc++)
+add_compile_options(-static-libstdc++ -std=c++20 -Wextra -Wno-psabi -Wno-deprecated -pedantic)
 
 FetchContent_Declare(
   Eigen3
@@ -21,10 +23,20 @@ FetchContent_MakeAvailable(Eigen3)
 
 FetchContent_Declare(
   yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp
+  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
   GIT_TAG master
 )
 FetchContent_MakeAvailable(yaml-cpp)
+
+# FetchContent_Declare(
+#   spdlog
+#   GIT_REPOSITORY https://github.com/gabime/spdlog.git
+#   GIT_TAG v1.17.0
+# )
+# FetchContent_MakeAvailable(spdlog)
+
+find_package(HDF5 COMPONENTS C CXX)
+find_package(GTest REQUIRED)
 
 FetchContent_Declare(
   moteus
@@ -40,13 +52,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(pi3hat)
 
-add_executable(quad src/main.cpp src/Robot.cpp src/Leg.cpp src/Teleop.cpp)
+FetchContent_Declare(
+  ModernRobotics
+  GIT_REPOSITORY https://github.com/Ian118/ModernRobotics.git
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(ModernRobotics)
+
+add_subdirectory(libquad)
+
+add_executable(quad src/main.cpp src/Robot.cpp src/Teleop.cpp)
 
 target_include_directories(quad PUBLIC include)
-target_link_libraries(quad PUBLIC Eigen3::Eigen yaml-cpp::yaml-cpp moteus::cpp pi3hat::pi3hat)
-target_compile_options(quad PUBLIC -std=c++20 -Werror -Wextra -Wno-psabi -Wno-deprecated -pedantic)
-# target_compile_features(quad PRIVATE cxx_std_20)
-# target_compile_definitions(quad PRIVATE QUAD_V1=1)
+# spdlog hdf5::hdf5_cpp
+target_link_libraries(quad PUBLIC libquad Eigen3::Eigen yaml-cpp::yaml-cpp moteus::cpp pi3hat::pi3hat)
+target_compile_options(quad PUBLIC -Werror)
 
 # Upload code & configs to robot (make deploy)
 add_custom_target(deploy COMMAND rsync -rz $<TARGET_FILE:quad> ${CMAKE_CURRENT_SOURCE_DIR}/configs "${remote_user}@${remote_host}:/home/${remote_user}/")

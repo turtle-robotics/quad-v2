@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <iostream>
 #include <map>
 #include <moteus.h>
@@ -10,10 +11,14 @@
 #include "Teleop.hpp"
 
 using namespace mjbots;
-using PosCmd = moteus::PositionMode::Command;
-using PosFmt = moteus::PositionMode::Format;
-
 class Robot {
+  using PosCmd = moteus::PositionMode::Command;
+  using PosFmt = moteus::PositionMode::Format;
+  using MotorState = moteus::Query::Result;
+  using Controller = moteus::Controller;
+  using Resolution = moteus::Resolution;
+  using Transport = pi3hat::Pi3HatMoteusTransport;
+
 public:
   Robot() {};
 
@@ -27,7 +32,7 @@ public:
   void queryMotors();
   void holdPosition();
   void printStatus();
-  int gotoCartesianPose(const std::map<int, Eigen::Vector3d> &legPose,
+  int gotoCartesianPose(const std::map<int, Eigen::Translation3d> &legPose,
                         double max_torque = NaN);
   int gotoJointPose(const std::map<int, double> &jointPose,
                     double max_torque = NaN);
@@ -61,7 +66,7 @@ private:
 
   std::map<int, Leg *> legs;
   std::map<int, moteus::Controller *> motors;
-  std::map<int, moteus::Query::Result> motorState;
+  std::map<int, moteus::Query::Result *> motorState;
   Teleop teleop;
 
   double lower_min, lower_max;
@@ -84,37 +89,24 @@ private:
   char lower_str[64];
 
   double deploy_torque = 2.5; // N m
+  double deploy_vel = 0.1;    // m/s
   // Deployment parameters
   const std::map<int, double> deploy_a_cmds{
-      {11, 0.250}, {12, 0.000}, {13, 0.100}, //
-      {21, 0.250}, {22, 0.000}, {23, 0.100}, //
-      {31, 0.250}, {32, 0.000}, {33, 0.100}, //
-      {41, 0.250}, {42, 0.000}, {43, 0.100}, //
+      {11, -0.250}, {12, -0.000}, {13, +0.100}, //
+      {21, +0.250}, {22, -0.000}, {23, +0.100}, //
+      {31, -0.250}, {32, -0.000}, {33, +0.100}, //
+      {41, +0.250}, {42, -0.000}, {43, +0.100}, //
   };
   const std::map<int, double> deploy_b_cmds{
-      {11, 0.125}, {12, 0.125}, {13, 0.100}, //
-      {21, 0.125}, {22, 0.125}, {23, 0.100}, //
-      {31, 0.125}, {32, 0.125}, {33, 0.100}, //
-      {41, 0.125}, {42, 0.125}, {43, 0.100}, //
+      {11, -0.125}, {12, -0.000}, {13, +0.100}, //
+      {21, +0.125}, {22, -0.000}, {23, +0.100}, //
+      {31, -0.125}, {32, -0.000}, {33, +0.100}, //
+      {41, +0.125}, {42, -0.000}, {43, +0.100}, //
   };
   const std::map<int, double> deploy_c_cmds{
-      {11, 0.000}, {12, 0.125}, {13, 0.100}, //
-      {21, 0.000}, {22, 0.125}, {23, 0.100}, //
-      {31, 0.000}, {32, 0.125}, {33, 0.100}, //
-      {41, 0.000}, {42, 0.125}, {43, 0.100}, //
-  };
-
-  const std::map<int, double> stand_cmds{
-      {11, 0.000}, {12, -0.110}, {13, 0.250}, //
-      {21, 0.000}, {22, -0.110}, {23, 0.250}, //
-      {31, 0.000}, {32, -0.090}, {33, 0.250}, //
-      {41, 0.000}, {42, -0.090}, {43, 0.250}, //
-  };
-
-  const std::map<int, Eigen::Vector3d> foot_positions{
-      {1, {0.000, 0.010, 0.200}}, //
-      {2, {0.000, 0.010, 0.200}}, //
-      {3, {0.000, 0.010, 0.200}}, //
-      {4, {0.000, 0.010, 0.200}}, //
+      {11, -0.000}, {12, -0.125}, {13, +0.100}, //
+      {21, +0.000}, {22, -0.125}, {23, +0.100}, //
+      {31, -0.000}, {32, -0.125}, {33, +0.100}, //
+      {41, +0.000}, {42, -0.125}, {43, +0.100}, //
   };
 };

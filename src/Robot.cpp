@@ -1,11 +1,9 @@
 #include "Robot.hpp"
 
-#include <iostream>
-
 // variables prefixed with c_ are YAML nodes
 int Robot::configure(YAML::Node conf, bool configure_motors,
                      bool write_motor_config) {
-  using Transport = pi3hat::Pi3HatMoteusTransport;
+
   if (configured) {
     std::cerr << "Robot is already configured." << std::endl;
     return -1;
@@ -30,7 +28,6 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
   for (int leg_id = 1; leg_id <= 4; leg_id++) {
     for (int joint_id = 1; joint_id <= 3; joint_id++) {
       int can_id = leg_id * 10 + joint_id;
-
       motors[can_id] = new moteus::Controller([&]() {
         moteus::Controller::Options coptions;
         coptions.id = can_id;
@@ -41,17 +38,36 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
   }
 
   // Create legs
-  const auto &c_leg = conf["leg"];
-  double l0 = c_leg["shoulderLen"].as<double>();
-  double l1 = c_leg["upperLen"].as<double>();
-  double l2 = c_leg["lowerLen"].as<double>();
-  double footRadius = c_leg["footRadius"].as<double>();
-  lower_min = c_leg["lowerMin"].as<double>();
-  lower_max = c_leg["lowerMax"].as<double>();
-  ::sprintf(lower_str, "d cfg-set-output %.4f", lower_min);
+  ::sprintf(lower_str, "d cfg-set-output %.4f",
+            conf["leg"]["lower"]["lim"][0].as<double>());
 
-  for (int i = 1; i <= 4; i++)
-    legs[i] = new Leg(l0, l1, l2, footRadius);
+  std::array<JointProperties, 3> jointProperties;
+
+  int i = 0;
+  for (const auto cLeg : conf["leg"]) {
+    jointProperties[i] = JointProperties{
+        .l = cLeg["len"].as<double>(),
+        .m = cLeg["mass"].as<double>(0.0),
+        .ixx = cLeg["inertia"][0].as<double>(0.0),
+        .iyy = cLeg["inertia"][1].as<double>(0.0),
+        .izz = cLeg["inertia"][2].as<double>(0.0),
+        .thetaMax = cLeg["lim"][0].as<double>(INFINITY),
+        .thetaMin = cLeg["lim"][1].as<double>(-INFINITY),
+        .dthetaMax = cLeg["maxVel"].as<double>(INFINITY),
+        .ddthetaMax = cLeg["maxAccel"].as<double>(INFINITY),
+        .tauMax = cLeg["maxTorque"].as<double>(INFINITY),
+    };
+    i++;
+  }
+
+  double rf = conf["leg"]["foot"]["l"].as<double>();
+
+  for (int i = 1; i <= 4; i++) {
+    legs[i] = new Leg{i, jointProperties, rf};
+    // motorState[i * 10 + 1] = &legs[i]->motor_state_1;
+    // motorState[i * 10 + 2] = &legs[i]->motor_state_2;
+    // motorState[i * 10 + 3] = &legs[i]->motor_state_3;
+  }
 
   // Create chassis
   const auto &c_chassis = conf["chassis"];
@@ -66,15 +82,31 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
 
   if (configure_motors) {
     std::cout << "Writing motor configuration..." << std::endl;
+
+    std::string conf_str;
     const auto &c_motor_conf = conf["motor_config"];
     for (auto &c_line : c_motor_conf)
       for (auto &motor_pair : motors) {
-        std::stringstream ss;
-        ss << "conf set " << c_line.as<std::string>();
-        motor_pair.second->DiagnosticCommand(ss.str());
-        std::cout << "Wrote motor " << motor_pair.first
-                  << " config: " << ss.str() << std::endl;
+        conf_str = "conf set " + c_line.as<std::string>();
+        motor_pair.second->DiagnosticCommand(conf_str);
+        ::printf("Wrote config \"%s\" to motor %d\n", conf_str.c_str(),
+                 motor_pair.first);
       }
+    const auto &c_motor_dir = conf["motor_directions"];
+    for (auto &c_motor : c_motor_dir) {
+      int can_id = c_motor.first.as<int>();
+      int direction = c_motor.second.as<int>();
+      if (motors.find(can_id) != motors.end()) {
+        conf_str =
+            "conf set motor_position.output.sign " + std::to_string(direction);
+        motors[can_id]->DiagnosticCommand(conf_str);
+        ::printf("Wrote config \"%s\" to motor %d\n", conf_str.c_str(), can_id);
+      } else {
+        std::cerr << "Invalid configuration file: motor_directions contains "
+                  << "invalid can_id " << can_id << "." << std::endl;
+        return -1;
+      }
+    }
   }
   if (write_motor_config) {
     std::cout << "Writing motor configuration to flash..." << std::endl;
@@ -107,10 +139,10 @@ int Robot::init() {
     int id = motor_pair.first;
     moteus::Controller *motor = motor_pair.second;
     const auto state = motor->SetStop();
-    motorState[id] = state->values;
-    moteus::GpioWrite::Command gpio_cmd;
-    gpio_cmd.aux1 = 1; // set aux1 to high
-    motor->SetWriteGpio(gpio_cmd);
+    *motorState[id] = state->values;
+    // moteus::GpioWrite::Command gpio_cmd;
+    // gpio_cmd.aux1 = 1; // set aux1 to high
+    // motor->SetWriteGpio(gpio_cmd);
   }
 
   // Initialize motors
@@ -216,26 +248,28 @@ void Robot::loop(unsigned int us) {
   case RUNNING: {
     for (auto &leg_pair : legs) {
       int leg_id = leg_pair.first;
-      Eigen::Vector2d v = 0.2 * teleop.v;
+      Eigen::Vector3d v = 0.2 * teleop.V.tail<3>(); // body velocity in x, y, z
       auto &leg = leg_pair.second;
-      leg->walk(v, us);
-      // printf("Leg %d: v=(%.3f, %.3f), theta=(%.3f, %.3f, %.3f)\n", leg_id,
-      //        v.x(), v.y(), leg->theta[0]* 0.5 * M_1_PI, leg->theta[1] * 0.5 *
-      //        M_1_PI, leg->theta[2] * 0.5 * M_1_PI);
+      // leg->walk(v, us);
       std::map<int, double> jointAngles{
-          {leg_id * 10 + 1, leg->theta[0] * 0.5 * M_1_PI},
-          {leg_id * 10 + 2, leg->theta[1] * 0.5 * M_1_PI},
-          {leg_id * 10 + 3, leg->theta[2] * 0.5 * M_1_PI},
+          {leg_id * 10 + 1, leg->thetalist[0] * 0.5 * M_1_PI},
+          {leg_id * 10 + 2, leg->thetalist[1] * 0.5 * M_1_PI},
+          {leg_id * 10 + 3, leg->thetalist[2] * 0.5 * M_1_PI},
       };
       if (gotoJointPose(jointAngles) == 1) {
         if (leg_pair.second->state == Leg::LIFT) {
           leg_pair.second->state = Leg::PLACE;
         } else if (leg_pair.second->state == Leg::PLACE) {
-          leg_pair.second->state = Leg::TRAVEL;
+          leg_pair.second->state = Leg::RUNNING;
         }
       }
     }
   } break;
+  }
+  if (state != RUNNING && prev_state == RUNNING) {
+    for (auto &leg_pair : legs) {
+      leg_pair.second->state = Leg::IDLE;
+    }
   }
 
   teleop.readGamepad();
@@ -244,19 +278,23 @@ void Robot::loop(unsigned int us) {
 }
 
 int Robot::homeMotors() {
-  motorState[13] = motors[13]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
-  motorState[23] = motors[23]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
-  motorState[33] = motors[33]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
-  motorState[43] = motors[43]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+  *motorState[13] =
+      motors[13]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+  *motorState[23] =
+      motors[23]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+  *motorState[33] =
+      motors[33]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+  *motorState[43] =
+      motors[43]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
   if (prev_state != HOMING ||
-      (motorState[13].mode == moteus::Mode::kPosition &&
-       motorState[13].fault != 102) ||
-      (motorState[23].mode == moteus::Mode::kPosition &&
-       motorState[23].fault != 102) ||
-      (motorState[33].mode == moteus::Mode::kPosition &&
-       motorState[33].fault != 102) ||
-      (motorState[43].mode == moteus::Mode::kPosition &&
-       motorState[43].fault != 102))
+      (motorState[13]->mode == moteus::Mode::kPosition &&
+       motorState[13]->fault != 102) ||
+      (motorState[23]->mode == moteus::Mode::kPosition &&
+       motorState[23]->fault != 102) ||
+      (motorState[33]->mode == moteus::Mode::kPosition &&
+       motorState[33]->fault != 102) ||
+      (motorState[43]->mode == moteus::Mode::kPosition &&
+       motorState[43]->fault != 102))
     return 0;
   stopMotors();
   ::usleep(1000000); // wait for motors to settle
@@ -265,7 +303,11 @@ int Robot::homeMotors() {
   for (auto &motor_pair : motors) {
     int id = motor_pair.first;
     if (id % 10 == 1) {
-      motor_pair.second->DiagnosticCommand("d cfg-set-output 0.25");
+      if ((id / 10) % 2 == 0) {
+        motor_pair.second->DiagnosticCommand("d cfg-set-output 0.25");
+      } else {
+        motor_pair.second->DiagnosticCommand("d cfg-set-output -0.25");
+      }
     } else if (id % 10 == 2) {
       motor_pair.second->DiagnosticCommand("d cfg-set-output 0.0");
     } else if (id % 10 == 3) {
@@ -275,17 +317,17 @@ int Robot::homeMotors() {
   return 1;
 }
 
-int Robot::gotoCartesianPose(const std::map<int, Eigen::Vector3d> &legPose,
+int Robot::gotoCartesianPose(const std::map<int, Eigen::Translation3d> &legPose,
                              double max_torque) {
   std::map<int, double> jointPose;
   for (auto &pose_pair : legPose) {
     int leg_id = pose_pair.first;
-    Eigen::Vector3d theta_list = Eigen::Vector3d::Zero();
-    legs[leg_id]->ik(pose_pair.second, theta_list);
+    legs[leg_id]->pf = pose_pair.second;
+    legs[leg_id]->ik();
     // Degrees to turns
-    jointPose[leg_id * 10 + 1] = theta_list[0] * 0.5 * M_1_PI;
-    jointPose[leg_id * 10 + 2] = theta_list[1] * 0.5 * M_1_PI;
-    jointPose[leg_id * 10 + 3] = theta_list[2] * 0.5 * M_1_PI;
+    jointPose[leg_id * 10 + 1] = legs[leg_id]->thetalist[0] * 0.5 * M_1_PI;
+    jointPose[leg_id * 10 + 2] = legs[leg_id]->thetalist[1] * 0.5 * M_1_PI;
+    jointPose[leg_id * 10 + 3] = legs[leg_id]->thetalist[2] * 0.5 * M_1_PI;
   }
 
   // return gotoJointPose(jointPose, max_torque);
@@ -313,7 +355,7 @@ int Robot::gotoJointPose(const std::map<int, double> &jointPose,
     cmd.maximum_torque = max_torque;
 
     const auto state = motor->SetPosition(cmd, &pos_fmt);
-    motorState[id] = state->values;
+    *motorState[id] = state->values;
     if (std::abs(state->values.position - position) > 0.01) {
       all_reached = false;
     }
@@ -332,10 +374,10 @@ void Robot::queryMotors() {
 
     auto result = motor->SetQuery();
     if (!result.has_value()) {
-      motorState[id] = moteus::Query::Result{};
+      *motorState[id] = moteus::Query::Result{};
       continue;
     }
-    motorState[id] = result->values;
+    *motorState[id] = result->values;
   }
 }
 
@@ -345,7 +387,7 @@ void Robot::stopMotors() {
     moteus::Controller *motor = motor_pair.second;
 
     const auto state = motor->SetStop();
-    motorState[id] = state->values;
+    *motorState[id] = state->values;
   }
 }
 
@@ -355,7 +397,7 @@ void Robot::holdPosition() {
     moteus::Controller *motor = motor_pair.second;
 
     const auto state = motor->SetZeroVelocity();
-    motorState[id] = state->values;
+    *motorState[id] = state->values;
   }
 }
 
@@ -364,23 +406,38 @@ void Robot::printStatus() {
   if (teleop.error) {
     ::printf("\033[2KGamepad: Not Connected\n");
   } else {
-    ::printf("\033[2KGamepad: v=(%7.3f,%7.3f) wz=%7.3f home=%1d deploy=%1d\n",
-             teleop.v.x(), teleop.v.y(), teleop.wz, teleop.home_joints,
-             teleop.deploy_legs);
+    ::printf("\033[2KGamepad: w=(%6.3f,%6.3f,%6.3f) v=(%6.3f,%6.3f,%6.3f) "
+             "home=%1d deploy=%1d\n",
+             teleop.V[0], teleop.V[1], teleop.V[2], teleop.V[3], teleop.V[4],
+             teleop.V[5], teleop.home_joints, teleop.deploy_legs);
   }
 
   for (auto &state_pair : motorState) {
     int id = state_pair.first;
     const auto &r = state_pair.second;
-    if (isnanl(r.position)) {
+    if (isnanl(r->position)) {
       ::printf("\033[2K%2d: No data\n", id);
       continue;
     }
     ::printf("\033[2K%2d: %3d p/v/t=(%7.3f,%7.3f,%7.3f)  "
              "v/t/f=(%5.1f,%5.1f,%3d)\n",
-             id, static_cast<int>(r.mode), r.position, r.velocity, r.torque,
-             r.voltage, r.temperature, r.fault);
+             id, static_cast<int>(r->mode), r->position, r->velocity, r->torque,
+             r->voltage, r->temperature, r->fault);
   }
-  ::printf("\033[%dA", motorState.size() + 2);
+  for (auto &leg_pair : legs) {
+    int leg_id = leg_pair.first;
+    auto &leg = leg_pair.second;
+    ::printf("\033[2KLeg %d: state=%s p=(%6.3f,%6.3f,%6.3f) "
+             "theta=(%6.3f,%6.3f,%6.3f)\n",
+             leg_id,
+             leg->state == Leg::IDLE      ? "IDLE   "
+             : leg->state == Leg::LIFT    ? "LIFT   "
+             : leg->state == Leg::PLACE   ? "PLACE  "
+             : leg->state == Leg::RUNNING ? "RUNNING"
+                                          : "UNKNOWN",
+             leg->pf.x(), leg->pf.y(), leg->pf.z(), leg->thetalist[0],
+             leg->thetalist[1], leg->thetalist[2]);
+  }
+  ::printf("\033[%dA", motorState.size() + legs.size() + 2);
   ::fflush(stdout);
 }

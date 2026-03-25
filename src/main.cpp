@@ -1,6 +1,10 @@
 #include "Robot.hpp"
+#include <algorithm>
+#include <errno.h>
 #include <iostream>
+#include <pthread.h>
 #include <signal.h>
+#include <sys/mman.h>
 
 constexpr useconds_t duty_cycle_us = 10000;
 Robot robot; // global robot instance
@@ -21,6 +25,20 @@ void print_help(const char *program_name) {
   std::cout << "  -h : Print this help message." << std::endl;
 }
 
+void configure_rt() {
+  if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+    std::cerr << "mlockall failed: " << strerror(errno) << std::endl;
+  }
+  struct sched_param param{.sched_priority = 99};
+
+  if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+    std::cerr << "sched_setscheduler failed: " << strerror(errno) << std::endl;
+  } else {
+    std::cout << "Real-time scheduling enabled with priority "
+              << param.sched_priority << std::endl;
+  }
+}
+
 // Legs are numbered from 1 to 4: Front Right, Front Left, Back Right, Back Left
 // Joints are numbered from 1 to 3: Shoulder, Upper Leg, Lower Leg
 // Motor CAN IDs follow: AB where A is the leg number and B is the joint number
@@ -28,6 +46,9 @@ void print_help(const char *program_name) {
 int main(int argc, char *argv[]) {
   // Handle Ctrl-C signal to stop motors safely
   signal(SIGINT, signal_callback_handler);
+
+  // Configure real-time scheduling
+  configure_rt();
 
   // Load configuration file from command line argument
   if (argc < 2) {
