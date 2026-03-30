@@ -9,25 +9,24 @@ leg:
   shoulder:
     len: 0.047 # m
     mass: 0.0 #kg
-    cm: [0.0, 0.0, 0.0] #m
     inertia: [0.0, 0.0, 0.0] #kg*m^2
-    lim: [-0.785, 0.785] # rad
+    thetamin: -0.785 #rad
+    thetamax: 0.785 # rad
   upper:
     len: 0.192 # m
     mass: 0.0 #kg
-    cm: [0.0, 0.0, 0.0] #m
     inertia: [0.0, 0.0, 0.0] #kg*m^2
-    lim: [-0.785, 1.571] # rad
+    thetamin: -0.785 # rad
+    thetamax: 1.571 # rad
   lower:
     len: 0.192 # m
     mass: 0.0 #kg
-    cm: [0.0, 0.0, 0.0] #m
     inertia: [0.0, 0.0, 0.0] #kg*m^2
-    lim: [0.099, 0.417] # rad
+    thetaMin: 0.099 # rad
+    thetaMax: 0.417 # rad
   foot:
     len: 0.020 # m
     mass: 0.0 #kg
-    cm: [0.0, 0.0, 0.0] #m
     inertia: [0.0, 0.0, 0.0] #kg*m^2
 servomap:
   1: [11, 12, 13]

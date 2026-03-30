@@ -4,8 +4,10 @@
 #include <iostream>
 #include <map>
 #include <moteus.h>
-#include <pi3hat_moteus_transport.h>
 #include <yaml-cpp/yaml.h>
+#ifdef RPI
+#include <pi3hat_moteus_transport.h>
+#endif
 
 #include "Leg.hpp"
 #include "Teleop.hpp"
@@ -20,7 +22,7 @@ class Robot {
   using Transport = pi3hat::Pi3HatMoteusTransport;
 
 public:
-  Robot() {};
+  Robot(std::array<std::shared_ptr<Leg>, 4> legs) : legs{legs} {};
 
   // Configure robot using a YAML configuration file
   int configure(YAML::Node conf, bool configure_motors,
@@ -64,7 +66,7 @@ private:
 
   double chassis_length, chassis_width;
 
-  std::map<int, Leg *> legs;
+  std::array<std::shared_ptr<Leg>, 4> legs;
   std::map<int, moteus::Controller *> motors;
   std::map<int, moteus::Query::Result *> motorState;
   Teleop teleop;

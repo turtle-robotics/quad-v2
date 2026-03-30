@@ -1,3 +1,4 @@
+#include "ConfigLoader.hpp"
 #include "Robot.hpp"
 #include <algorithm>
 #include <errno.h>
@@ -7,11 +8,11 @@
 #include <sys/mman.h>
 
 constexpr useconds_t duty_cycle_us = 10000;
-Robot robot; // global robot instance
+std::shared_ptr<Robot> robot; // global robot instance
 
 void signal_callback_handler(int signum) {
   ::printf("\033[2J\033[H"); // clear screen
-  robot.stopMotors();
+  robot->stopMotors();
 
   exit(signum);
 }
@@ -85,19 +86,22 @@ int main(int argc, char *argv[]) {
   std::cout << "Starting robot with config file " << config_file << std::endl;
   YAML::Node config = YAML::LoadFile(config_file);
 
-  if (robot.configure(config, configure_motors, write_motor_config) != 0) {
+  robot = std::make_shared<Robot>(
+      config["legs"].as<std::array<std::shared_ptr<Leg>, 4>>());
+
+  if (robot->configure(config, configure_motors, write_motor_config) != 0) {
     std::cerr << "Failed to configure robot." << std::endl;
     return 1;
   }
 
-  if (robot.init() != 0) {
+  if (robot->init() != 0) {
     std::cerr << "Failed to initialize robot." << std::endl;
     return 1;
   }
 
   std::cout << "Running..." << std::endl;
   while (true) {
-    robot.loop(duty_cycle_us);
+    robot->loop(duty_cycle_us);
     ::usleep(duty_cycle_us);
   }
 

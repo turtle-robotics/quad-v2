@@ -19,13 +19,12 @@ constexpr double xSign[4]{1.0, 1.0, -1.0, -1.0};
 constexpr double ySign[4]{-1.0, 1.0, -1.0, 1.0};
 
 struct JointProperties {
-  double l;                  // m
-  double m;                  // kg
-  double ixx, iyy, izz;      // kg*m^2
-  double thetaMax, thetaMin; // rad
-  double dthetaMax;          // rad/s
-  double ddthetaMax;         // rad/s^2
-  double tauMax;             // N*m
+  double l;                      // m
+  Eigen::Matrix<double, 6, 6> G; // kg*m^2, kg
+  double thetaMax, thetaMin;     // rad
+  double dthetaMax;              // rad/s
+  double ddthetaMax;             // rad/s^2
+  double tauMax;                 // N*m
 };
 
 struct LegProperties {
@@ -45,9 +44,18 @@ struct LegProperties {
 
 class Leg {
 public:
-  Leg(const int legNum, const std::array<JointProperties, njoints> &joints,
-      const double rf)
-      : legNum{legNum}, prop{makeProperties(legNum, joints, rf)} {};
+  Leg(Eigen::Vector<double, njoints+1> &l,
+      Eigen::Matrix<double, 6, njoints> &Slist,
+      Eigen::Isometry3d &M,
+      std::array<Eigen::Isometry3d, njoints + 1> &Mlist,
+      std::array<Eigen::Matrix<double, 6, 6>, njoints> &Glist,
+      Eigen::Matrix<double, njoints, 2> &thetaRange,
+      Eigen::Vector<double, njoints> &dthetaMax,
+      Eigen::Vector<double, njoints> &ddthetaMax,
+      Eigen::Vector<double, njoints> &tauMax)
+      : l{l}, Slist{Slist}, M{M}, Mlist{Mlist}, Glist{Glist},
+        thetaRange{thetaRange}, dthetaMax{dthetaMax}, ddthetaMax{ddthetaMax},
+        tauMax{tauMax} {};
 
   // Forward Kinematics
   void fk();
@@ -83,27 +91,19 @@ public:
   Eigen::Vector<double, njoints> taulist;     // N*m
 
 private:
-  const int legNum;
-
-  const LegProperties prop;
-  LegProperties
-  makeProperties(const int &legNum,
-                 const std::array<JointProperties, njoints> &joints,
-                 const double &rf);
-
   /* Leg geometry & mass properties */
-  const double &l1 = prop.l1, &l2 = prop.l2, &l3 = prop.l3, &rf = prop.rf; // m
-  const Eigen::Matrix<double, 6, njoints> &Slist = prop.Slist;             //
-  const Eigen::Isometry3d &M = prop.M;                                  // SE(3)
-  const std::array<Eigen::Isometry3d, njoints + 1> &Mlist = prop.Mlist; // SE(3)
-  const std::array<Eigen::Matrix<double, 6, 6>, njoints> &Glist =
-      prop.Glist; // kg, kg*m^2
+  const Eigen::Vector<double, njoints+1> l;
+  // const double &l1 = l(0), &l2 = l(1), &l3 = l(2), &rf = l(3);  // m
+  const Eigen::Matrix<double, 6, njoints> Slist;                //
+  const Eigen::Isometry3d M;                                    // SE(3)
+  const std::array<Eigen::Isometry3d, njoints + 1> Mlist;       // SE(3)
+  const std::array<Eigen::Matrix<double, 6, 6>, njoints> Glist; // kg, kg*m^2
 
   /* Joint limits */
-  const Eigen::Matrix<double, njoints, 2> &thetaRange = prop.thetaRange; // rad
-  const Eigen::Vector<double, njoints> &dthetaMax = prop.dthetaMax;   // rad/s
-  const Eigen::Vector<double, njoints> &ddthetaMax = prop.ddthetaMax; // rad/s^2
-  const Eigen::Vector<double, njoints> &tauMax = prop.tauMax;         // N*m
+  const Eigen::Matrix<double, njoints, 2> thetaRange; // rad
+  const Eigen::Vector<double, njoints> dthetaMax;     // rad/s
+  const Eigen::Vector<double, njoints> ddthetaMax;    // rad/s^2
+  const Eigen::Vector<double, njoints> tauMax;        // N*m
 
   // double v_r = 0.2;     // m/s, return speed of foot during lift phase
   // double v_min = 0.02;  // m/s, minimum speed of foot during lift phase
