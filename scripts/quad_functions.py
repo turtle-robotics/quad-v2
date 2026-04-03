@@ -7,7 +7,7 @@ from yaml import YAMLObject
 def parse_yaml(config):
     l, m, cmlist, Ilist, Glist = [], [], [], [], []
 
-    for leg in config["leg"].values():
+    for leg in config["joints"].values():
         l += [leg['len']]
         m += [leg['mass']]
         cmlist += [leg['cm']]

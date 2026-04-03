@@ -4,11 +4,6 @@
 #include <iostream>
 #include <unistd.h>
 
-int Teleop::config(std::string gamepad_path) {
-  this->gamepad_path = gamepad_path;
-  return 0;
-}
-
 int Teleop::init() {
   gamepad = open(gamepad_path.c_str(), O_RDONLY | O_NONBLOCK);
   if (gamepad == -1) {
@@ -19,8 +14,6 @@ int Teleop::init() {
 
   return 0;
 }
-
-int Teleop::close() { return 0; }
 
 int Teleop::readGamepad() {
   ssize_t r1 = read(gamepad, events, sizeof events);

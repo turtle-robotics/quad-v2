@@ -1,4 +1,5 @@
 #include "Leg.hpp"
+#include <ModernRobotics>
 
 // Forward Kinematics
 void Leg::fk() {
@@ -31,8 +32,8 @@ void Leg::ik() {
 }
 
 void Leg::id(const Eigen::Vector3d &g) {
-  Eigen::Vector<double, 6> Ftip; // N*m, N
-  Ftip << Eigen::Vector3d::Zero(), ff;
+  Eigen::Vector<double, 6> Ftip = Eigen::Vector<double, 6>::Zero(); // N*m, N
+  Ftip.tail<3>() = ffoot;
   taulist = mr::InverseDynamics<njoints>(thetalist, dthetalist, ddthetalist, g,
                                          Ftip, Mlist, Glist, Slist);
 }

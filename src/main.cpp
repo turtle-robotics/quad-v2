@@ -86,8 +86,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Starting robot with config file " << config_file << std::endl;
   YAML::Node config = YAML::LoadFile(config_file);
 
-  robot = std::make_shared<Robot>(
-      config["legs"].as<std::array<std::shared_ptr<Leg>, 4>>());
+  robot = config.as<std::shared_ptr<Robot>>();
 
   if (robot->configure(config, configure_motors, write_motor_config) != 0) {
     std::cerr << "Failed to configure robot." << std::endl;

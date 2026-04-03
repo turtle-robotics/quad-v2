@@ -4,13 +4,17 @@
     {
       "name": "rpi",
       "displayName": "Cross Compile for Raspberry Pi",
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain-aarch64.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/toolchain-aarch64.cmake",
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
       "name": "local",
       "displayName": "Compile for local machine",
+      "binaryDir": "${sourceDir}/build/debug",
+      "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }

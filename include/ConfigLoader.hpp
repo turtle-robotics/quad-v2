@@ -1,11 +1,16 @@
 #include "Chassis.hpp"
 #include "Leg.hpp"
+#include "Robot.hpp"
 #include <Eigen/Core>
+#include <ModernRobotics>
 #include <algorithm>
 #include <fstream>
+#include <memory>
 #include <string>
-#include <ModernRobotics>
 #include <yaml-cpp/yaml.h>
+#if defined(__aarch64__)
+#include <pi3hat_moteus_transport.h>
+#endif
 
 namespace YAML {
 
@@ -18,6 +23,57 @@ template <class Scalar, int n> struct convert<Eigen::Vector<Scalar, n>> {
     for (unsigned i = 0; i < node.size(); i++) {
       rhs(i) = node[i].as<Scalar>();
     }
+    return true;
+  }
+};
+
+template <> struct convert<std::shared_ptr<Robot::JointPose>> {
+  static bool decode(const Node &node, std::shared_ptr<Robot::JointPose> &rhs) {
+    if (!node.IsSequence() || !node.size() == 4) {
+      return false;
+    }
+    for (int nleg = 0; nleg < 4; nleg++) {
+      for (int njoint = 0; njoint < 3; njoint++) {
+        (*rhs)[nleg][njoint] = node[nleg][njoint].as<double>();
+      }
+    }
+    return true;
+  }
+};
+
+// Robot
+template <> struct convert<std::shared_ptr<Robot>> {
+  static bool decode(const Node &node, std::shared_ptr<Robot> &rhs) {
+    if (!node.IsMap() || !node["joints"].IsMap() || !node["servomap"].IsMap()) {
+      return false;
+    }
+
+#if defined(__aarch64__)
+    const auto transport =
+        node["servomap"].as<std::shared_ptr<pi3hat::Pi3HatMoteusTransport>>();
+#endif
+
+    Robot::Motors motors;
+
+    // Create motor objects
+    for (int nleg = 0; nleg < 4; nleg++) {
+      for (int njoint = 0; njoint < 3; njoint++) {
+        int can_id = (nleg + 1) * 10 + njoint + 1;
+        motors[nleg][njoint] = std::make_shared<moteus::Controller>([&]() {
+          moteus::Controller::Options coptions;
+#if defined(__aarch64__)
+          coptions.transport = transport,
+#endif
+          coptions.id = can_id;
+          return coptions;
+        }());
+      }
+    }
+
+    rhs = std::make_shared<Robot>(
+        node["chassis"].as<std::shared_ptr<Chassis>>(),
+        node["joints"].as<std::array<std::shared_ptr<Leg>, 4>>(),
+        node["gamepad"].as<std::shared_ptr<Teleop>>(), motors);
     return true;
   }
 };
@@ -53,7 +109,7 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
     JointProperties upper = node["upper"].as<JointProperties>();
     JointProperties lower = node["lower"].as<JointProperties>();
     JointProperties foot = node["foot"].as<JointProperties>();
-    std::array<JointProperties, 4> joints{{shoulder, upper, lower, foot}};
+    std::array<JointProperties, 3> joints{{shoulder, upper, lower}};
 
     Eigen::Vector<double, 4> l;
     std::array<Eigen::Isometry3d, 4> Mlist;
@@ -79,6 +135,7 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
           tauMax(j) = joint.tauMax;
           j++;
         }
+        l(j) = foot.l;
       }
 
       q << 0.0, 0.0, 0.0,                   // q1
@@ -104,34 +161,67 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
   }
 };
 
-// ChassisProperties
-template <> struct convert<ChassisProperties> {
-  static bool decode(const Node &node, ChassisProperties &rhs) {
+// Chassis
+template <> struct convert<std::shared_ptr<Chassis>> {
+  static bool decode(const Node &node, std::shared_ptr<Chassis> &rhs) {
     if (!node.IsMap()) {
       return false;
     }
+
     double m = node["mass"].as<double>(0);
+    Eigen::Vector3d leg_offset = node["leg_offset"].as<Eigen::Vector3d>();
     Eigen::Matrix3d I;
+    Eigen::Matrix<double, 6, 6> G;
+    Eigen::Isometry3d M;
+    std::array<Eigen::Isometry3d, 4> T_chassis_shoulder;
+
     I.diagonal() = node["inertia"].as<Eigen::Vector3d>(Eigen::Vector3d::Zero());
 
-    rhs.G.topLeftCorner<3, 3>() = I;
-    rhs.G.bottomRightCorner<3, 3>().diagonal().setConstant(m);
+    G.topLeftCorner<3, 3>() = I;
+    G.bottomRightCorner<3, 3>().diagonal().setConstant(m);
 
-    rhs.home.vector() =
-        node["home"].as<Eigen::Vector3d>(Eigen::Vector3d::Identity());
+    M.translation() = node["home"].as<Eigen::Vector3d>(Eigen::Vector3d::Zero());
+
+    for (unsigned nleg = 0; nleg < 4; nleg++) {
+      T_chassis_shoulder[nleg] =
+          Eigen::Translation3d{leg_dir[nleg].cwiseProduct(leg_offset)};
+    }
+
+    rhs = std::make_shared<Chassis>(G, M, T_chassis_shoulder);
     return true;
   }
 };
 
-// Chassis
-template <> struct convert<Chassis> {
-  static bool decode(const Node &node, Chassis &rhs) {
+template <> struct convert<std::shared_ptr<Teleop>> {
+  static bool decode(const Node &node, std::shared_ptr<Teleop> &rhs) {
+    if (!node.IsScalar()) {
+      return false;
+    }
+    rhs = std::make_shared<Teleop>(node.as<std::string>(""));
+    return true;
+  }
+};
+
+// Moteus pi3hat Transport
+#if defined(__aarch64__)
+template <> struct convert<std::shared_ptr<pi3hat::Pi3HatMoteusTransport>> {
+  static bool decode(const Node &node,
+                     std::shared_ptr<pi3hat::Pi3HatMoteusTransport> &rhs) {
     if (!node.IsMap()) {
       return false;
     }
 
-    rhs = Chassis(node.as<ChassisProperties>());
+    pi3hat::Pi3HatMoteusTransport::Options toptions;
+    for (const auto &conf_bus_id : node) {
+      for (const auto &conf_servo_id : conf_bus_id.second) {
+        toptions.servo_map[conf_servo_id.as<int>()] =
+            conf_bus_id.first.as<int>();
+      }
+    }
+    rhs = std::make_shared<pi3hat::Pi3HatMoteusTransport>(toptions);
     return true;
   }
 };
+#endif
+
 } // namespace YAML

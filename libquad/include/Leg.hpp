@@ -1,7 +1,7 @@
 #pragma once
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <ModernRobotics>
+// #include <ModernRobotics>
 #include <cmath>
 #include <iostream>
 #include <numbers>
@@ -82,7 +82,7 @@ public:
   Eigen::Translation3d pf;      // m
   Eigen::Vector<double, 6> Vf;  // rad/s, m/s
   Eigen::Vector<double, 6> dVf; // rad/s^2, m/s^2
-  Eigen::Vector3d ff;           // N
+  Eigen::Vector<double, 3> ffoot;           // N
 
   // Joint space (updated by motor controller)
   Eigen::Vector<double, njoints> thetalist;   // rad
@@ -90,7 +90,6 @@ public:
   Eigen::Vector<double, njoints> ddthetalist; // rad/s^2
   Eigen::Vector<double, njoints> taulist;     // N*m
 
-private:
   /* Leg geometry & mass properties */
   const Eigen::Vector<double, njoints+1> l;
   // const double &l1 = l(0), &l2 = l(1), &l3 = l(2), &rf = l(3);  // m
