@@ -10,10 +10,10 @@ leg:
   lowerMin: 0.099
   lowerMax: 0.417
 servomap:
-  1: [11,12,13]
-  2: [21,22,23]
-  3: [31,32,33]
-  4: [41,42,43]
+  1: [11, 12, 13]
+  2: [21, 22, 23]
+  3: [31, 32, 33]
+  4: [41, 42, 43]
   5: [1]
 motor_config:
   - servopos.position_max nan
@@ -27,5 +27,17 @@ motor_config:
   - servo.default_accel_limit 20.0
   - motor_position.rotor_to_output_ratio 0.0526315789
   - servo.max_voltage 54.0
-inverted_motors: [11,12,13,32,33,41]
+motor_directions:
+  11: 1
+  12: 1
+  13: 1
+  21: -1
+  22: -1
+  23: -1
+  31: -1
+  32: 1
+  33: 1
+  41: 1
+  42: -1
+  43: -1
 gamepad: /dev/input/by-id/usb-Logitech_Wireless_Gamepad_F710_D63B91BB-event-joystick
