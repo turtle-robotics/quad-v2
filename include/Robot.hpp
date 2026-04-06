@@ -40,10 +40,7 @@ public:
 
   void stopMotors();
   void queryMotors();
-  // void holdPosition();
   void printStatus();
-  // int gotoCartesianPose(const std::map<int, Eigen::Translation3d> &legPose,
-  //                       double max_torque = NaN);
   int gotoJointPose(const JointPose &jointPose, double max_torque = NaN);
 
   int homeMotors();
@@ -104,23 +101,4 @@ private:
   JointPose deploy_a_cmds;
   JointPose deploy_b_cmds;
   JointPose deploy_c_cmds;
-
-  // const std::map<int, double> deploy_a_cmds{
-  //     {11, +0.250}, {12, -0.000}, {13, +0.100}, //
-  //     {21, -0.250}, {22, -0.000}, {23, +0.100}, //
-  //     {31, +0.250}, {32, -0.000}, {33, +0.100}, //
-  //     {41, -0.250}, {42, -0.000}, {43, +0.100}, //
-  // };
-  // const std::map<int, double> deploy_b_cmds{
-  //     {11, +0.125}, {12, -0.000}, {13, +0.100}, //
-  //     {21, -0.125}, {22, -0.000}, {23, +0.100}, //
-  //     {31, +0.125}, {32, -0.000}, {33, +0.100}, //
-  //     {41, -0.125}, {42, -0.000}, {43, +0.100}, //
-  // };
-  // const std::map<int, double> deploy_c_cmds{
-  //     {11, +0.000}, {12, -0.125}, {13, +0.100}, //
-  //     {21, -0.000}, {22, -0.125}, {23, +0.100}, //
-  //     {31, +0.000}, {32, -0.125}, {33, +0.100}, //
-  //     {41, -0.000}, {42, -0.125}, {43, +0.100}, //
-  // };
 };

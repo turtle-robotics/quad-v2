@@ -5,26 +5,18 @@ from yaml import YAMLObject
 
 
 def parse_yaml(config):
-    l, m, cmlist, Ilist, Glist = [], [], [], [], []
+    l, Glist = [], []
 
     for leg in config["joints"].values():
         l += [leg['len']]
-        m += [leg['mass']]
-        cmlist += [leg['cm']]
-        Ilist += [leg['inertia']]
         Glist += [np.diag(leg['inertia']+3*[leg['mass']])]
 
-    l, m, cmlist, Ilist, Glist = np.array(l), np.array(
-        m), np.array(cmlist), np.array(Ilist), np.array(Glist)
+    l, Glist = np.array(l), np.array(Glist)
 
     l1, l2, l3, l4 = l
-    m1, m2, m3, m4 = m
-    cm1, cm2, cm3, cm4 = cmlist
-    I1, I2, I3, I4 = Ilist
-    G1, G2, G3, G3 = Glist
     m0 = config["chassis"]["mass"]
-    lx0 = config["chassis"]["length"]
-    ly0 = config["chassis"]["width"]
+    # lx0 = config["chassis"]["length"]
+    # ly0 = config["chassis"]["width"]
     # f_offset = np.array([0, 0, l4])
 
     xd = [1, 1, -1, -1]
@@ -50,11 +42,11 @@ def parse_yaml(config):
         Mlist = np.array([mr.RpToTrans(R, p01), mr.RpToTrans(R, p12), mr.RpToTrans(
             R, p23), mr.RpToTrans(R, p34)])
         M = mr.RpToTrans(R, p01+p12+p23+p34)
-        Mlistinv = np.array([mr.TransInv(M), Mlist[-1], Mlist[-2], Mlist[-3]])
+        # Mlistinv = np.array([mr.TransInv(M), Mlist[-1], Mlist[-2], Mlist[-3]])
 
         Blist = mr.Adjoint(mr.TransInv(M)) @ Slist
 
-        return Slist, Blist, Mlist, M, Ilist, Glist, l
+        return Slist, Blist, Mlist, M, Glist, l
 
     return leg, m0
 

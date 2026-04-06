@@ -12,6 +12,24 @@
 #include <pi3hat_moteus_transport.h>
 #endif
 
+// Internal convention: LF: 0, RF: 1, LB: 2, RB: 3
+constexpr double xSign[4]{1.0, 1.0, -1.0, -1.0};
+constexpr double ySign[4]{-1.0, 1.0, -1.0, 1.0};
+
+const std::array<Eigen::Vector3d, 4> leg_dir{{{+1.0, -1.0, -1.0},
+                                              {+1.0, +1.0, +1.0},
+                                              {-1.0, -1.0, -1.0},
+                                              {-1.0, +1.0, +1.0}}};
+
+struct JointProperties {
+  double l;                      // m
+  Eigen::Matrix<double, 6, 6> G; // kg*m^2, kg
+  double thetaMax, thetaMin;     // rad
+  double dthetaMax;              // rad/s
+  double ddthetaMax;             // rad/s^2
+  double tauMax;                 // N*m
+};
+
 namespace YAML {
 
 template <class Scalar, int n> struct convert<Eigen::Vector<Scalar, n>> {

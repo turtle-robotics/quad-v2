@@ -1,23 +1,23 @@
 name: TURTLE QUAD V2
 chassis:
-  leg_offset: [0.31559532, 0.07183850, 0.0000] # m
+  leg_offset: [0.31559532, 0.063, 0.0000] # m
   mass: 15.0 # kg
   inertia: [0.0, 0.0, 0.0] # kg*m^2
 joints:
   shoulder:
-    len: 0.047 # m
+    len: 0.115 # m
     mass: 0.0 # kg
     inertia: [0.0, 0.0, 0.0] # kg*m^2
     thetamin: -1.571 # rad
     thetamax: 1.571 # rad
   upper:
-    len: 0.192 # m
+    len: 0.200 # m
     mass: 0.0 # kg
     inertia: [0.0, 0.0, 0.0] # kg*m^2
     thetamin: -0.785 # rad
     thetamax: 1.571 # rad
   lower:
-    len: 0.192 # m
+    len: 0.200 # m
     mass: 0.0 # kg
     inertia: [0.0, 0.0, 0.0] # kg*m^2
     thetaMin: 0.099 # rad

@@ -60,5 +60,8 @@ CTestTestfile.cmake
 CPack*.cmake
 _deps
 
+# Python
+__pycache__
+
 # VS Code
 .vscode

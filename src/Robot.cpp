@@ -31,23 +31,6 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
           // ::printf("Wrote config \"%s\" to motor %d\n", conf_str.c_str(),
           //          motor_pair.first);
         }
-    // const auto &c_motor_dir = conf["motor_directions"];
-    // for (auto &c_motor : c_motor_dir) {
-    //   int can_id = c_motor.first.as<int>();
-    //   int direction = c_motor.second.as<int>();
-    //   if (motors.find(can_id) != motors.end()) {
-    //     conf_str =
-    //         "conf set motor_position.output.sign " +
-    //         std::to_string(direction);
-    //     motors[can_id]->DiagnosticCommand(conf_str);
-    //     ::printf("Wrote config \"%s\" to motor %d\n", conf_str.c_str(),
-    //     can_id);
-    //   } else {
-    //     std::cerr << "Invalid configuration file: motor_directions contains "
-    //               << "invalid can_id " << can_id << "." << std::endl;
-    //     return -1;
-    //   }
-    // }
   }
   if (write_motor_config) {
     std::cout << "Writing motor configuration to flash..." << std::endl;

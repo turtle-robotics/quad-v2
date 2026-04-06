@@ -14,24 +14,17 @@ set(remote_host quad2.local)
 
 add_compile_options(-static-libstdc++ -std=c++20 -Wextra -Wno-psabi -Wno-deprecated -pedantic -w)
 
-# FetchContent_Declare(
-#   Eigen3
-#   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-#   GIT_TAG 5.0.1
-# )
-
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
   GIT_TAG master
 )
 
-# FetchContent_Declare(
-#   spdlog
-#   GIT_REPOSITORY https://github.com/gabime/spdlog.git
-#   GIT_TAG v1.17.0
-# )
-# FetchContent_MakeAvailable(spdlog)
+FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG v1.17.0
+)
 
 FetchContent_Declare(
   moteus
@@ -52,9 +45,8 @@ FetchContent_Declare(
 )
 
 find_package(Eigen3 REQUIRED)
-# FetchContent_MakeAvailable(Eigen3)
 FetchContent_MakeAvailable(yaml-cpp)
-# find_package(yaml-cpp REQUIRED)
+FetchContent_MakeAvailable(spdlog)
 # find_package(HDF5 COMPONENTS C CXX REQUIRED)
 # find_package(GTest REQUIRED)
 FetchContent_MakeAvailable(moteus)

@@ -6,5 +6,10 @@ target_link_libraries(libquad PUBLIC Eigen3::Eigen ModernRobotics yaml-cpp::yaml
 target_compile_options(libquad PUBLIC -Werror)
 
 if(BUILD_TESTING)
-  add_subdirectory(tests)
+  enable_testing()
+  find_package(GTest REQUIRED)
+
+  add_executable(leg_tests test/leg_tests.cpp)
+  target_link_libraries(leg_tests libquad Eigen3::Eigen GTest::gtest_main)
+  gtest_discover_tests(leg_tests)
 endif()
