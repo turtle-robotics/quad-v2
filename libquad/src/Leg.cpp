@@ -31,6 +31,9 @@ void Leg::ik(const Eigen::Translation3d &pf,
   thetalist[1] = atan2(z, x) - acos((l[1] * l[1] + d2 - l[2] * l[2]) /
                                     (2.0 * l[1] * sqrt(d2)));
   thetalist[2] = -acos((l[1] * l[1] + l[2] * l[2] - d2) / (2.0 * l[1] * l[2]));
+  std::cout<< thetalist<<"\n\n"<<thetadir<<"\n\n";
+  
+  thetalist = thetalist.cwiseProduct(thetadir);
 }
 
 void Leg::ivk(const Eigen::Vector3d &vf,

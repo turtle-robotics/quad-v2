@@ -32,7 +32,8 @@ public:
   void fk(const Eigen::Vector<double, njoints> &thetalist, Eigen::Vector3d &pf);
 
   // Inverse Kinematics
-  void ik(const Eigen::Translation3d &pf, Eigen::Vector<double, njoints> &thetalist);
+  void ik(const Eigen::Translation3d &pf,
+          Eigen::Vector<double, njoints> &thetalist);
 
   // Inverse Velocity Kinematics
   void ivk(const Eigen::Vector3d &vf,
@@ -78,8 +79,8 @@ private:
   const Eigen::Vector<double, njoints> tauMax;        // N*m
 
   /* Joint directions */
-  const Eigen::Vector<double, njoints> thetadir{Slist(0, 0), Slist(1, 1),
-                                                Slist(1, 2)};
+  const Eigen::Vector<double, njoints> thetadir{Slist(0, 0) * Slist(1, 1),
+                                                Slist(1, 1), Slist(1, 1)};
 
   Eigen::Matrix<double, njoints, 3> Jinv;
 
