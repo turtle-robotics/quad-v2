@@ -37,7 +37,7 @@ public:
 
   // Inverse Velocity Kinematics
   void ivk(const Eigen::Vector3d &vf,
-           const Eigen::Vector<double, njoints> &thetalist,
+           const Eigen::Translation3d &pf,
            Eigen::Vector<double, njoints> &dthetalist);
 
   // Inverse Dynamics
@@ -84,7 +84,7 @@ private:
 
   Eigen::Matrix<double, njoints, 3> Jinv;
 
-  void computeJinv(const Eigen::Vector<double, njoints> &thetalist,
+  void computeJinv(const Eigen::Translation3d &pf,
                    Eigen::Matrix<double, njoints, 3> &Jinv);
 
   // double v_r = 0.2;     // m/s, return speed of foot during lift phase

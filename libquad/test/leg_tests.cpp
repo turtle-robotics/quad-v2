@@ -26,7 +26,6 @@ Leg makeLeg(int i) {
       0, 0, 0,      //
       0, 0, -l[2];
   Slist *= leg_dir[i].asDiagonal();
-  std::cout << leg_dir[i] << "\n\n" << Slist << "\n\n";
   Mlist[0] = Eigen::Isometry3d::Identity();
   Mlist[1].translation() = Eigen::Vector3d{0, l[0] * leg_dir[i][1], 0};
   Mlist[2].translation() = Eigen::Vector3d{-l[1], 0, 0};
@@ -81,4 +80,43 @@ TEST(QUADLegTest, IKTest) {
       << "Values should match:\n"
       << thetalist4 << "\n\n"
       << expected_thetalist4;
+}
+
+TEST(QUADLegTest, IVKTest) {
+  Leg leg1 = makeLeg(0);
+  Leg leg2 = makeLeg(1);
+  Leg leg3 = makeLeg(2);
+  Leg leg4 = makeLeg(3);
+  Eigen::Translation3d pf{0.0, 0.0, 0.25};
+  Eigen::Vector3d dthetalist1, dthetalist2, dthetalist3, dthetalist4;
+  Eigen::Vector3d vf{0.1, 0.2, 0.3};
+  leg1.ivk(vf, pf, dthetalist1);
+  leg2.ivk(vf, pf, dthetalist2);
+  leg3.ivk(vf, pf, dthetalist3);
+  leg4.ivk(vf, pf, dthetalist4);
+
+  Eigen::Vector3d expected_dthetalist1{+1.6226, -0.4966, +1.9973};
+  Eigen::Vector3d expected_dthetalist2{-1.6226, +0.4966, -1.9973};
+  Eigen::Vector3d expected_dthetalist3{+1.6226, -1.5007, +1.9973};
+  Eigen::Vector3d expected_dthetalist4{-1.6226, +1.5007, -1.9973};
+
+  EXPECT_TRUE(dthetalist1.isApprox(expected_dthetalist1, 1e-4))
+      << "Values should match:\n"
+      << dthetalist1 << "\n\n"
+      << expected_dthetalist1;
+
+  EXPECT_TRUE(dthetalist2.isApprox(expected_dthetalist2, 1e-4))
+      << "Values should match:\n"
+      << dthetalist2 << "\n\n"
+      << expected_dthetalist2;
+
+  EXPECT_TRUE(dthetalist3.isApprox(expected_dthetalist3, 1e-4))
+      << "Values should match:\n"
+      << dthetalist3 << "\n\n"
+      << expected_dthetalist3;
+
+  EXPECT_TRUE(dthetalist4.isApprox(expected_dthetalist4, 1e-4))
+      << "Values should match:\n"
+      << dthetalist4 << "\n\n"
+      << expected_dthetalist4;
 }

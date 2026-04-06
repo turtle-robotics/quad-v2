@@ -31,15 +31,13 @@ void Leg::ik(const Eigen::Translation3d &pf,
   thetalist[1] = atan2(z, x) - acos((l[1] * l[1] + d2 - l[2] * l[2]) /
                                     (2.0 * l[1] * sqrt(d2)));
   thetalist[2] = -acos((l[1] * l[1] + l[2] * l[2] - d2) / (2.0 * l[1] * l[2]));
-  std::cout<< thetalist<<"\n\n"<<thetadir<<"\n\n";
-  
   thetalist = thetalist.cwiseProduct(thetadir);
 }
 
-void Leg::ivk(const Eigen::Vector3d &vf,
-              const Eigen::Vector<double, njoints> &thetalist,
+void Leg::ivk(const Eigen::Vector3d &vf, const Eigen::Translation3d &pf,
               Eigen::Vector<double, njoints> &dthetalist) {
-  computeJinv(thetalist, Jinv);
+  computeJinv(pf, Jinv);
+  dthetalist = Jinv * vf;
 }
 
 void Leg::id(const Eigen::Vector3d &g) {
@@ -49,7 +47,7 @@ void Leg::id(const Eigen::Vector3d &g) {
                                          Ftip, Mlist, Glist, Slist);
 }
 
-void Leg::computeJinv(const Eigen::Vector3d &pf,
+void Leg::computeJinv(const Eigen::Translation3d &pf,
                       Eigen::Matrix<double, njoints, 3> &Jinv) {
   double x = pf.x();
   double y = pf.y();
@@ -80,6 +78,7 @@ void Leg::computeJinv(const Eigen::Vector3d &pf,
   Jinv(2, 0) = x * zmult;
   Jinv(2, 1) = y * zmult;
   Jinv(2, 2) = z * zmult;
+  Jinv *= thetadir.asDiagonal();
 }
 
 void Leg::run() {
