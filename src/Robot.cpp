@@ -198,9 +198,9 @@ void Robot::loop(unsigned int us) {
 
 int Robot::homeMotors() {
   for (unsigned nleg = 0; nleg < 4; nleg++) {
-    homing_cmd.velocity = nleg % 2 ? 0.1 : -0.1;
+    cmd_home.velocity = nleg % 2 ? 0.1 : -0.1;
     motorState[nleg][2] =
-        motors[nleg][2]->SetPosition(homing_cmd, &homing_pos_fmt)->values;
+        motors[nleg][2]->SetPosition(cmd_home, &fmt_home)->values;
   }
   if (prev_state != HOMING)
     return 0;

@@ -81,16 +81,26 @@ private:
 
   // Homing parameters
   double max_homing_torque = 3.5;
-  PosFmt homing_pos_fmt{
-      .position = moteus::kFloat,
-      .velocity = moteus::kFloat,
-      .maximum_torque = moteus::kFloat,
-      .ignore_position_bounds = moteus::kFloat,
+  PosFmt fmt_home{
+      .position = Resolution::kIgnore,
+      .velocity = Resolution::kFloat,
+      .maximum_torque = Resolution::kFloat,
+      .ignore_position_bounds = Resolution::kFloat,
   };
-  PosCmd homing_cmd{
+  PosCmd cmd_home{
       .position = NaN,
       .maximum_torque = max_homing_torque,
       .ignore_position_bounds = 1.0,
+  };
+  PosFmt fmt_deploy{
+      .position = Resolution::kFloat,
+      .velocity = Resolution::kIgnore,
+      .maximum_torque = Resolution::kFloat,
+      .velocity_limit = Resolution::kFloat,
+  };
+  PosCmd cmd_deploy{
+      .maximum_torque = 2.5,
+      .velocity_limit = 0.5,
   };
 
   double deploy_torque = 2.5; // N m
