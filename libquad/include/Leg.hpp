@@ -1,7 +1,5 @@
 #pragma once
 #include "spatial.hpp"
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 #include <cmath>
 #include <iostream>
 #include <numbers>
@@ -19,7 +17,7 @@ public:
   Leg(Eigen::Vector<double, njoints + 1> &l,
       Eigen::Matrix<double, 6, njoints> &Slist, Eigen::Isometry3d &M,
       std::array<Eigen::Isometry3d, njoints + 1> &Mlist,
-      std::array<Eigen::Matrix<double, 6, 6>, njoints> &Glist,
+      std::array<Eigen::Matrix6d, njoints> &Glist,
       Eigen::Matrix<double, njoints, 2> &thetaRange,
       Eigen::Vector<double, njoints> &dthetaMax,
       Eigen::Vector<double, njoints> &ddthetaMax,
@@ -43,11 +41,11 @@ public:
   enum state_t { IDLE, HOMING, RUNNING, LIFT, PLACE } state = IDLE;
 
   // Foot space
-  Eigen::Translation3d pf; // m
-  Eigen::Vector3d vf;      // m/s
-  Eigen::Vector3d dvf;     // m/s^2
-  Eigen::Vector3d ffoot;   // N
-  Eigen::Vector3d g;       // m/s^2
+  Eigen::Vector3d pf;    // m
+  Eigen::Vector3d vf;    // m/s
+  Eigen::Vector3d dvf;   // m/s^2
+  Eigen::Vector3d ffoot; // N
+  Eigen::Vector3d g;     // m/s^2
 
   // Joint space (updated by motor controller)
   Eigen::Vector<double, njoints> thetalist;   // rad
@@ -57,11 +55,11 @@ public:
 
 private:
   /* Leg geometry & mass properties */
-  const Eigen::Vector<double, njoints + 1> l;                   // m
-  const Eigen::Matrix<double, 6, njoints> Slist;                //
-  const Eigen::Isometry3d M;                                    // SE(3)
-  const std::array<Eigen::Isometry3d, njoints + 1> Mlist;       // SE(3)
-  const std::array<Eigen::Matrix<double, 6, 6>, njoints> Glist; // kg, kg*m^2
+  const Eigen::Vector<double, njoints + 1> l;             // m
+  const Eigen::Matrix<double, 6, njoints> Slist;          //
+  const Eigen::Isometry3d M;                              // SE(3)
+  const std::array<Eigen::Isometry3d, njoints + 1> Mlist; // SE(3)
+  const std::array<Eigen::Matrix6d, njoints> Glist;       // kg, kg*m^2
 
   /* Joint limits */
   const Eigen::Matrix<double, njoints, 2> thetaRange; // rad
@@ -77,10 +75,10 @@ private:
   Eigen::Matrix<double, njoints, 3> Jinv; // rad/m
 
   /* Inverse dynamics */
-  Eigen::Isometry3d Mi;                                      // SE(3)
-  Eigen::Matrix<double, 6, njoints> Ai;                      //
-  Eigen::Matrix<double, 6, njoints + 1> Vi;                  // rad/s, m/s
-  Eigen::Matrix<double, 6, njoints + 1> dVi;                 // rad/s^2, m/s^2
-  std::array<Eigen::Matrix<double, 6, 6>, njoints + 1> AdTi; //
-  Eigen::Vector<double, 6> Fi;                               // N*m, N
+  Eigen::Isometry3d Mi;                          // SE(3)
+  Eigen::Matrix<double, 6, njoints> Ai;          //
+  Eigen::Matrix<double, 6, njoints + 1> Vi;      // rad/s, m/s
+  Eigen::Matrix<double, 6, njoints + 1> dVi;     // rad/s^2, m/s^2
+  std::array<Eigen::Matrix6d, njoints + 1> AdTi; //
+  Eigen::Vector6d Fi;                            // N*m, N
 };

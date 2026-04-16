@@ -1,9 +1,14 @@
 #pragma once
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <array>
-#include <cmath>
+#include <Eigen/Dense>
 
+// #define EIGEN_MATRIX_PLUGIN "matrix_plugin.hpp"
+// #define EIGEN_TRANSFORM_PLUGIN "eigen_plugins/transform.hpp"
+
+namespace Eigen {
+typedef Matrix<double, 6, 1> Vector6d;
+typedef Matrix<double, 6, 6> Matrix6d;
+} // namespace Eigen
+/*
 inline void exp(const Eigen::Matrix3d &so3mat, Eigen::Matrix3d &R) {
   Eigen::AngleAxisd theta{so3mat};
   if (abs(theta.angle()) < 1e-6) {
@@ -51,14 +56,15 @@ inline Eigen::Isometry3d exp(const Eigen::Matrix4d &se3mat) {
   return T;
 }
 
-inline void ad(const Eigen::Vector<double, 6> &V,
-               Eigen::Matrix<double, 6, 6> &adV) {
-  adV << V.segment<3>(0).asSkewSymmetric().toDenseMatrix(), Eigen::Matrix3d::Zero(),
-      V.segment<3>(3).asSkewSymmetric().toDenseMatrix(), V.segment<3>(0).asSkewSymmetric().toDenseMatrix();
+inline void ad(const Eigen::Vector6d &V, Eigen::Matrix6d &adV) {
+  adV << V.segment<3>(0).asSkewSymmetric().toDenseMatrix(),
+      Eigen::Matrix3d::Zero(),
+      V.segment<3>(3).asSkewSymmetric().toDenseMatrix(),
+      V.segment<3>(0).asSkewSymmetric().toDenseMatrix();
 }
 
-inline Eigen::Matrix<double, 6, 6> ad(const Eigen::Vector<double, 6> &V) {
-  Eigen::Matrix<double, 6, 6> adV;
+inline Eigen::Matrix6d ad(const Eigen::Vector6d &V) {
+  Eigen::Matrix6d adV;
   ad(V, adV);
   return adV;
 }
@@ -75,7 +81,7 @@ inline Eigen::Matrix<double, 6, 6> ad(const Eigen::Vector<double, 6> &V) {
 //   }
 // }
 
-inline void Ad(const Eigen::Isometry3d &T, Eigen::Matrix<double, 6, 6> &AdT) {
+inline void Ad(const Eigen::Isometry3d &T, Eigen::Matrix6d &AdT) {
   AdT << T.linear(), Eigen::Matrix3d::Zero(),
       T.linear() * T.translation().asSkewSymmetric(), T.linear();
 }
@@ -94,13 +100,20 @@ inline Eigen::Matrix<double, 6, 6> Ad(const Eigen::Isometry3d &T) {
 //     Ad(T[i], AdT.block<6, 6>(i, i));
 //   }
 // }
+*/
 
-inline void se3(const Eigen::Vector<double, 6> &V, Eigen::Matrix4d &se3mat) {
-  se3mat << V.head<3>().asSkewSymmetric().toDenseMatrix(), V.tail<3>(), 0, 0, 0, 0;
-}
+// inline void se3(const Eigen::Vector6d &V, Eigen::Matrix4d &se3mat) {
+//   se3mat << V.head<3>().asSkewSymmetric().toDenseMatrix(), V.tail<3>(), 0, 0, 0,
+//       0;
+// }
 
-inline Eigen::Matrix4d se3(const Eigen::Vector<double, 6> &V) {
-  Eigen::Matrix4d se3mat;
-  se3(V, se3mat);
-  return se3mat;
+// inline Eigen::Matrix4d se3(const Eigen::Vector6d &V) {
+//   Eigen::Matrix4d se3mat;
+//   se3(V, se3mat);
+//   return se3mat;
+// }
+
+inline Eigen::Vector6d screwAxis(const Eigen::Vector3d &q,
+                                 const Eigen::Vector3d &s, const double &h) {
+  return (Eigen::Vector6d() << s, q.cross(s) + h * s).finished();
 }

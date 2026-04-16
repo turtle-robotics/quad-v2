@@ -12,7 +12,7 @@ Leg makeLeg(int i) {
   Eigen::Matrix<double, 6, njoints> Slist;
   Eigen::Isometry3d M;
   std::array<Eigen::Isometry3d, njoints + 1> Mlist;
-  std::array<Eigen::Matrix<double, 6, 6>, njoints> Glist;
+  std::array<Eigen::Matrix6d, njoints> Glist;
   Eigen::Matrix<double, njoints, 2> thetaRange;
   Eigen::Vector<double, njoints> dthetaMax;
   Eigen::Vector<double, njoints> ddthetaMax;
@@ -31,9 +31,9 @@ Leg makeLeg(int i) {
   Mlist[2].translation() = Eigen::Vector3d{-l[1], 0, 0};
   Mlist[3].translation() = Eigen::Vector3d{l[2], 0, 0};
   M = Mlist[0] * Mlist[1] * Mlist[2] * Mlist[3];
-  Glist[0] = Eigen::Matrix<double, 6, 6>::Zero();
-  Glist[1] = Eigen::Matrix<double, 6, 6>::Zero();
-  Glist[2] = Eigen::Matrix<double, 6, 6>::Zero();
+  Glist[0] = Eigen::Matrix6d::Zero();
+  Glist[1] = Eigen::Matrix6d::Zero();
+  Glist[2] = Eigen::Matrix6d::Zero();
 
   // TODO: Include feasible limits
   thetaRange = Eigen::Matrix<double, njoints, 2>::Zero();
@@ -49,7 +49,7 @@ TEST(QUADLegTest, IKTest) {
   Leg leg3 = makeLeg(2);
   Leg leg4 = makeLeg(3);
 
-  Eigen::Translation3d pf{0.0, 0.0, 0.25};
+  Eigen::Vector3d pf{0.0, 0.0, 0.25};
   Eigen::Vector3d thetalist1, thetalist2, thetalist3, thetalist4;
   const Eigen::Vector3d expected_thetalist1{-0.5236, -0.5213, +1.0425};
   const Eigen::Vector3d expected_thetalist2{+0.5236, +0.5213, -1.0425};

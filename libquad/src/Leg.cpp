@@ -1,5 +1,4 @@
 #include "Leg.hpp"
-#include <ModernRobotics>
 
 // Forward Kinematics
 void Leg::fk() {
@@ -71,23 +70,24 @@ void Leg::id() {
   Mi = Eigen::Isometry3d::Identity();
   Vi.col(0).setZero();
   dVi.col(0) << Eigen::Vector3d::Zero(), -g;
-  AdTi[njoints] = Ad(Mlist[njoints].inverse());
+  AdTi[njoints] = Mlist[njoints].inverse().Ad();
   Fi << Eigen::Vector3d::Zero(), ffoot;
 
   // forward pass
   for (int i = 0; i < njoints; i++) {
     Mi = Mi * Mlist[i];
-    Ai.col(i) = Ad(Mi.inverse()) * Slist.col(i);
-    AdTi[i] = Ad(exp(se3(Ai.col(i) * -thetalist(i))) * Mlist[i].inverse());
+    Ai.col(i) = Mi.inverse().Ad() * Slist.col(i);
+    AdTi[i] =
+        ((Ai.col(i) * -thetalist(i)).asse3().exp6() * Mlist[i].inverse()).Ad();
     Vi.col(i + 1) = AdTi[i] * Vi.col(i) + Ai.col(i) * dthetalist(i);
     dVi.col(i + 1) = AdTi[i] * dVi.col(i) + Ai.col(i) * ddthetalist(i) +
-                     ad(Vi.col(i + 1)) * Ai.col(i) * dthetalist(i);
+                     Vi.col(i + 1).ad() * Ai.col(i) * dthetalist(i);
   }
 
   // backward pass
   for (int i = njoints - 1; i >= 0; i--) {
     Fi = AdTi[i + 1].transpose() * Fi + Glist[i] * dVi.col(i + 1) -
-         ad(Vi.col(i + 1)).transpose() * (Glist[i] * Vi.col(i + 1));
+         Vi.col(i + 1).ad().transpose() * Glist[i] * Vi.col(i + 1);
     taulist(i) = Fi.transpose() * Ai.col(i);
   }
 }
