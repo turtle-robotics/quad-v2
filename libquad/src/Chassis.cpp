@@ -24,9 +24,6 @@ void Chassis::id() {
   }
 }
 
-const Eigen::PermutationMatrix<6> Delta{
-    Eigen::Vector<int, 6>{3, 4, 5, 0, 1, 2}};
-
 void Chassis::nvp() {
   Eigen::Matrix<double, 3, Eigen::Dynamic> pfoot;
   for (unsigned nleg = 0; nleg < 4; nleg++)
