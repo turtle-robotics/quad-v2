@@ -220,8 +220,8 @@ if __name__ == '__main__':
     K = NormalizedVirtualPower(Slist, F)
     print(K, K.min())
 
-    p1 = np.array([1, 0, 0])
-    p2 = np.array([2, 0, 0])
+    p1 = np.array([1, 0, 6])
+    p2 = np.array([2, 4, 0])
     assert np.all(ScrewFromPoints(p1, p2, normalize=True) ==
                   mr.ScrewToAxis(p1, p2-p1, 0)/np.linalg.norm(p2-p1))
 

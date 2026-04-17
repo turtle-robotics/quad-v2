@@ -5,7 +5,8 @@
 #include <numbers>
 
 /**
- * Class Leg
+ * @brief Quadruped leg state
+ *
  * The leg class contains gemotry and mass properties for one leg, the leg
  * state, and functions to operate on the leg state.
  */

@@ -6,7 +6,8 @@
 #include <memory>
 
 /**
- * Class Chassis
+ * @brief Quadruped chassis state
+ *
  * The chassis class contains gemotry and mass properties for the chassis,
  * the chassis state, and functions to operate on the chassis state.
  *
@@ -33,16 +34,21 @@ public:
   /* Chassis state */
 
   // Body Frame
-  Eigen::Isometry3d Ts0;                  // SE(3)
-  Eigen::Vector6d Vb;                     // rad/s, m/s
-  Eigen::Vector6d dVb;                    // rad/s^2, m/s^2
-  std::array<Eigen::Isometry3d, 4> T_leg; // SE(3)
+  // Eigen::Vector6d Fb_ext;
+  // Eigen::Vector6d Vb_ext;
+
+  Eigen::Isometry3d Ts0; // SE(3)
+  Eigen::Vector6d Vb;    // rad/s, m/s
+  Eigen::Vector6d dVb;   // rad/s^2, m/s^2
+  Eigen::Vector6d Fb;    // N*m, m
 
   double K;
 
-  // Leg Frame
-  std::array<std::shared_ptr<Leg>, 4> legs;
+  // Legs
   std::array<Eigen::Isometry3d, 4> T4;
+  std::array<std::shared_ptr<Leg>, 4> legs;
+
+  Eigen::Hyperplane<double, 3> footPlane; // Foot Plane
 
 private:
   const Eigen::Matrix6d G; // kg*m^2
@@ -51,7 +57,7 @@ private:
   const Eigen::Isometry3d Ms;                 // SE(3)
   const std::array<Eigen::Isometry3d, 4> M01; // SE(3)
 
-  Eigen::Matrix<double, 12, 6> Jinv; //
+  Eigen::Matrix<double, 6, 12> Jinv; //
 
   const Eigen::Vector3d g{0, 0, 9.81}; // m/s^2
 };
