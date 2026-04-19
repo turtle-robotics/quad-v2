@@ -1,4 +1,5 @@
 #pragma once
+
 #include "spatial.hpp"
 #include <cmath>
 #include <iostream>
@@ -27,7 +28,11 @@ public:
         thetaRange{thetaRange}, dthetaMax{dthetaMax}, ddthetaMax{ddthetaMax},
         tauMax{tauMax} {};
 
-  // Forward Kinematics
+  /**
+   * @brief Forward Kinematics
+   *
+   * Uses thetalist to compute pf
+   */
   void fk();
 
   // Inverse Kinematics
@@ -36,17 +41,29 @@ public:
   // Inverse Dynamics
   void id();
 
+  // Initiate lift and set target
+  void liftTo(const Eigen::Isometry3d &T);
+
   void run();
 
   /* Leg state */
-  enum state_t { IDLE, HOMING, RUNNING, LIFT, PLACE } state = IDLE;
+  enum state_t {
+    IDLE,
+    HOMING,
+    RUNNING,
+    LIFT,
+    PLACE
+  } state = IDLE,
+    statep = IDLE;
 
   // Foot space
-  Eigen::Vector3d pf;    // m
-  Eigen::Vector3d vf;    // m/s
-  Eigen::Vector3d dvf;   // m/s^2
-  Eigen::Vector3d ffoot; // N
-  Eigen::Vector3d g;     // m/s^2
+  Eigen::Vector3d pf;     // m
+  Eigen::Vector3d vf;     // m/s
+  Eigen::Vector3d dvf;    // m/s^2
+  Eigen::Vector3d ffoot;  // N
+  Eigen::Vector3d g;      // m/s^2
+  Eigen::Vector3d liftpf; // m
+  double llift = 0.02;    // m TODO: Set from config
 
   // Joint space (updated by motor controller)
   Eigen::Vector<double, njoints> thetalist;   // rad

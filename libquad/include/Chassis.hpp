@@ -2,8 +2,7 @@
 
 #include "Leg.hpp"
 #include "spatial.hpp"
-// #include <ModernRobotics>
-#include <memory>
+#include <array>
 
 /**
  * @brief Quadruped chassis state
@@ -31,6 +30,8 @@ public:
   // Margin of Static Stability
   void nvp();
 
+  void run();
+
   /* Chassis state */
 
   // Body Frame
@@ -43,6 +44,7 @@ public:
   Eigen::Vector6d Fb;    // N*m, m
 
   double K;
+  int iRolloverLeg;
 
   // Legs
   std::array<Eigen::Isometry3d, 4> T4;

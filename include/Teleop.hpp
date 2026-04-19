@@ -1,6 +1,6 @@
-
 #pragma once
-#include <Eigen/Core>
+
+#include <Eigen/Dense>
 #include <linux/input.h>
 #include <string>
 

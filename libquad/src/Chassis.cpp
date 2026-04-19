@@ -1,4 +1,7 @@
 #include "Chassis.hpp"
+#include <vector>
+
+// TODO: at some point, update T and V with V and dV and dt
 
 void Chassis::ik() {
   for (unsigned nleg = 0; nleg < 4; nleg++) {
@@ -25,21 +28,30 @@ void Chassis::id() {
 }
 
 void Chassis::nvp() {
-  Eigen::Matrix<double, 3, Eigen::Dynamic> pfoot;
-  for (unsigned nleg = 0; nleg < 4; nleg++)
+  std::vector<unsigned> runningLegId;
+  Eigen::Matrix<double, 3, 4> pfoot;
+  for (unsigned nleg : {0, 1, 3, 2}) {
+    pfoot.col(nleg) = legs[nleg]->pf;
     if (legs[nleg]->state == Leg::state_t::RUNNING)
-      pfoot.col(nleg) = legs[nleg]->pf; // Add leg to list
+      runningLegId.push_back(nleg);
+  }
 
-  if (pfoot.cols() < 2)
+  if (runningLegId.size() < 2)
     return;
 
-  // Project feet onto plane
-  if (pfoot.cols() > 3) {
-    // centroid of legs
-    Eigen::Vector3d e = pfoot.colwise().sum() / pfoot.cols();
+  else if (runningLegId.size() == 3) {
+    footPlane = footPlane.Through(pfoot.col(runningLegId[0]),
+                                  pfoot.col(runningLegId[1]),
+                                  pfoot.col(runningLegId[2]));
+  }
 
-    // recenter foot positions with centroid: p_i-p_centrid, compute U matrix of
-    // SVD, select smallest col as normal vector
+  // Project feet onto plane
+  else if (runningLegId.size() > 3) {
+    // centroid of legs
+    Eigen::Vector3d e = pfoot.rowwise().sum() / pfoot.cols();
+
+    // recenter foot positions with centroid: p_i-p_centrid, compute U matrix
+    // of SVD, select smallest col as normal vector
     Eigen::Vector3d n = ((-pfoot).colwise() + e)
                             .jacobiSvd<Eigen::ComputeFullU>()
                             .matrixU()
@@ -48,20 +60,45 @@ void Chassis::nvp() {
     footPlane.offset() = -n.dot(e);
 
     // project foot positions onto plane
-    for (unsigned i = 0; i < pfoot.cols(); i++)
-      pfoot.col(i) = footPlane.projection(pfoot.col(i));
+    // for (unsigned i = 0; i < pfoot.cols(); i++)
+    //   pfoot.col(i) = footPlane.projection(pfoot.col(i));
   }
+  for (unsigned i = 0; i < 4; i++)
+    pfoot.col(i) = footPlane.projection(pfoot.col(i));
 
+  // Create list of rollover axis screws
   Eigen::Matrix<double, 6, Eigen::Dynamic> Slist;
-  unsigned nlegp = 0;
-  for (unsigned nleg : {1, 3, 2, 0}) {
-    Slist.col(nleg) = pointsToScrew(legs[nleg]->pf, legs[nlegp]->pf);
-    nlegp = nleg;
+  unsigned ip = 3;
+  for (unsigned i = 0; i < 4; ip = i, i++) {
+    Slist.col(i) = pointsToScrew(legs[i]->pf, legs[ip]->pf);
   }
 
+  // Create rollover normalized wrench
   Eigen::Vector6d F;
   F << F.tail<3>(), Fb.head<3>();
   F /= Fb.head<3>().norm();
-  // K = S^T * Delta * F
-  K = (Slist.transpose() * F).minCoeff();
+
+  // Margin of Static Stability K = S^T * Delta * F
+  Eigen::VectorXd Klist = Slist.transpose() * F;
+
+  // Find minimum K
+  K = Klist.minCoeff();
+  int ip = 3;
+  double KfootMin = 0.0;
+  for (int i = 0; i < Klist.rows(); ip = i, i++) {
+    double Kfoot = Klist(ip) * Klist(i);
+    if (Kfoot < KfootMin) {
+      KfootMin = Kfoot;
+      iRolloverLeg = i;
+    }
+  }
+}
+
+void Chassis::run() {
+  ik();
+  id();
+  nvp();
+  if (K < 0.1) { // TODO: Tune
+    legs[iRolloverLeg]->lift();
+  }
 }

@@ -1,6 +1,6 @@
 #pragma once
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+
+#include <Eigen/Dense>
 #include <iostream>
 #include <map>
 #include <moteus.h>
@@ -13,22 +13,20 @@
 #include "Chassis.hpp"
 #include "Leg.hpp"
 #include "Teleop.hpp"
+#include "helper.hpp"
 
 using namespace mjbots;
 class Robot {
-  using PosCmd = moteus::PositionMode::Command;
   using PosFmt = moteus::PositionMode::Format;
   using MotorState = moteus::Query::Result;
   using Controller = moteus::Controller;
   using Resolution = moteus::Resolution;
 
 public:
-  typedef std::array<std::array<std::shared_ptr<moteus::Controller>, 3>, 4>
-      Motors;
-  typedef std::array<std::array<double, 3>, 4> JointPose;
+  typedef LEG_JOINT_ARRAY(std::shared_ptr<moteus::Controller>) Motors;
+  typedef LEG_JOINT_ARRAY(double) JointPose;
 
-  Robot(std::shared_ptr<Chassis> chassis,
-        std::array<std::shared_ptr<Leg>, 4> legs,
+  Robot(std::shared_ptr<Chassis> chassis, LEG_ARRAY(std::shared_ptr<Leg>) legs,
         std::shared_ptr<Teleop> teleop, Motors motors)
       : chassis{chassis}, legs{legs}, teleop{teleop}, motors{motors} {};
 
@@ -71,11 +69,12 @@ private:
   double chassis_length, chassis_width;
 
   const std::shared_ptr<Chassis> chassis;
-  const std::array<std::shared_ptr<Leg>, 4> legs;
+  const LEG_ARRAY(std::shared_ptr<Leg>) legs;
   const std::shared_ptr<Teleop> teleop;
   const Motors motors;
 
-  std::array<std::array<moteus::Query::Result, 3>, 4> motorState;
+  LEG_JOINT_ARRAY(moteus::Query::Result) motorState;
+  LEG_JOINT_ARRAY(PosCmd) motorPosCmds;
 
   double lower_min, lower_max;
 

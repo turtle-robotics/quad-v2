@@ -1,5 +1,5 @@
 #include "Robot.hpp"
-#include "ConfigLoader.hpp"
+#include "config_loader.hpp"
 
 // variables prefixed with c_ are YAML nodes
 int Robot::configure(YAML::Node conf, bool configure_motors,
@@ -10,6 +10,9 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
     return -1;
   }
 
+#if defined(__aarch64__)
+  mjbots::pi3hat::ConfigureRealtime();
+#endif
   std::cout << "Configuring robot..." << std::endl;
 
   // Create motors
@@ -80,6 +83,12 @@ int Robot::init() {
 
 void Robot::loop(unsigned int us) {
   prev_state = state;
+
+  // chassis->run();
+  // for (const auto leg : legs) {
+
+  // }
+
   // Change State
   switch (state) {
   case IDLE: {
@@ -163,6 +172,13 @@ void Robot::loop(unsigned int us) {
   } break;
   case RUNNING: {
     // TODO: Gotta figure this one out
+    chassis->Vb = teleop->V;
+    chassis->run();
+    for (unsigned i = 0; i < 4; i++) {
+      legs[i]->run();
+      motorPosCmds[i] =
+          makePosCmd(legs[i]->thetalist, legs[i]->dthetalist, legs[i]->taulist);
+    }
 
     // int leg_id = 0;
     // for (auto &leg : legs) {

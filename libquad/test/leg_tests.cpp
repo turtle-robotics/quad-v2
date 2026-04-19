@@ -1,5 +1,5 @@
 #include "Leg.hpp"
-#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 const std::array<Eigen::Vector3d, 4> leg_dir{{{+1.0, -1.0, -1.0},

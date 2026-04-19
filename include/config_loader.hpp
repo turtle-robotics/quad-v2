@@ -1,8 +1,10 @@
+#pragma once
+
 #include "Chassis.hpp"
 #include "Leg.hpp"
 #include "Robot.hpp"
-#include <Eigen/Core>
-#include <ModernRobotics>
+#include "spatial.hpp"
+#include <Eigen/Dense>
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -22,13 +24,25 @@ const std::array<Eigen::Vector3d, 4> leg_dir{{{+1.0, -1.0, -1.0},
                                               {-1.0, +1.0, +1.0}}};
 
 struct JointProperties {
-  double l;                      // m
-  Eigen::Matrix<double, 6, 6> G; // kg*m^2, kg
-  double thetaMax, thetaMin;     // rad
-  double dthetaMax;              // rad/s
-  double ddthetaMax;             // rad/s^2
-  double tauMax;                 // N*m
+  double l;                  // m
+  Eigen::Matrix6d G;         // kg*m^2, kg
+  double thetaMax, thetaMin; // rad
+  double dthetaMax;          // rad/s
+  double ddthetaMax;         // rad/s^2
+  double tauMax;             // N*m
 };
+
+inline Eigen::Matrix<double, 6, 3>
+makeSlist(const Eigen::Vector3d &l, const double &xSign, const double &ySign) {
+  Eigen::Matrix3d q, s;
+  q << 0.0, 0.0, 0.0,           // q1
+      0.0, ySign * l[0], 0.0,   // q2
+      -l[1], ySign * l[0], 0.0; // q3
+  s << xSign, 0.0, 0.0,         // s1
+      0.0, ySign, 0.0,          // s2
+      0.0, ySign, 0.0;          // s3
+  return screwAxis(q, s);
+}
 
 namespace YAML {
 
@@ -103,10 +117,10 @@ template <> struct convert<JointProperties> {
       return false;
     }
     double m = node["mass"].as<double>(0);
-    Eigen::Matrix3d I;
-    I.diagonal() = node["inertia"].as<Eigen::Vector3d>(Eigen::Vector3d::Zero());
-    rhs.G.topLeftCorner<3, 3>() = I;
-    rhs.G.bottomRightCorner<3, 3>().diagonal().setConstant(m);
+    Eigen::Matrix3d I = node["inertia"]
+                            .as<Eigen::Vector3d>(Eigen::Vector3d::Zero())
+                            .asDiagonal();
+    rhs.G = makeG(I, m);
     rhs.thetaMin = node["thetaMin"].as<double>(-INFINITY);
     rhs.thetaMax = node["thetaMax"].as<double>(INFINITY);
     rhs.dthetaMax = node["dthetaMax"].as<double>(INFINITY);
@@ -129,18 +143,17 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
     JointProperties foot = node["foot"].as<JointProperties>();
     std::array<JointProperties, 3> joints{{shoulder, upper, lower}};
 
-    Eigen::Vector<double, 4> l;
+    Eigen::Vector4d l;
     std::array<Eigen::Isometry3d, 4> Mlist;
     Eigen::Isometry3d M;
-    Eigen::Matrix3d q, s;
     Eigen::Matrix<double, 6, 3> Slist;
-    std::array<Eigen::Matrix<double, 6, 6>, 3> Glist;
+    std::array<Eigen::Matrix6d, 3> Glist;
     Eigen::Matrix<double, 3, 2> thetaRange;
     Eigen::Vector3d dthetaMax;
     Eigen::Vector3d ddthetaMax;
     Eigen::Vector3d tauMax;
 
-    for (unsigned legNum = 0; legNum < 4; legNum++) {
+    for (unsigned nLeg = 0; nLeg < 4; nLeg++) {
       {
         unsigned j = 0;
         for (const auto &joint : joints) {
@@ -155,25 +168,15 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
         }
         l(j) = foot.l;
       }
-
-      q << 0.0, 0.0, 0.0,                   // q1
-          0.0, ySign[legNum] * l[0], 0.0,   // q2
-          -l[1], ySign[legNum] * l[0], 0.0; // q3
-      s << xSign[legNum], 0.0, 0.0,         // s1
-          0.0, ySign[legNum], 0.0,          // s2
-          0.0, ySign[legNum], 0.0;          // s3
-      for (unsigned i = 0; i < 3; i++) {
-        Slist.col(i) = mr::ScrewToAxis(q.row(i), s.row(i), 0.0);
-      }
-
-      M = Eigen::Translation3d{l[2] - l[1], ySign[legNum] * l[0], 0.0};
+      Slist = makeSlist(l.head<3>(), xSign[nLeg], ySign[nLeg]);
+      M = Eigen::Translation3d{l[2] - l[1], ySign[nLeg] * l[0], 0.0};
 
       Mlist[0] = Eigen::Translation3d{0.0, 0.0, 0.0};
-      Mlist[1] = Eigen::Translation3d{0.0, ySign[legNum] * l[0], 0.0};
-      Mlist[2] = Eigen::Translation3d{-l[1], ySign[legNum] * l[0], 0.0};
-      Mlist[3] = Eigen::Translation3d{l[2] - l[1], ySign[legNum] * l[0], 0.0};
-      rhs[legNum] = std::make_shared<Leg>(l, Slist, M, Mlist, Glist, thetaRange,
-                                          dthetaMax, ddthetaMax, tauMax);
+      Mlist[1] = Eigen::Translation3d{0.0, ySign[nLeg] * l[0], 0.0};
+      Mlist[2] = Eigen::Translation3d{-l[1], ySign[nLeg] * l[0], 0.0};
+      Mlist[3] = Eigen::Translation3d{l[2] - l[1], ySign[nLeg] * l[0], 0.0};
+      rhs[nLeg] = std::make_shared<Leg>(l, Slist, M, Mlist, Glist, thetaRange,
+                                        dthetaMax, ddthetaMax, tauMax);
     }
     return true;
   }
@@ -186,17 +189,14 @@ template <> struct convert<std::shared_ptr<Chassis>> {
       return false;
     }
 
-    double m = node["mass"].as<double>(0);
+    double m = node["mass"].as<double>(0.0);
+    Eigen::Matrix3d I = node["inertia"]
+                            .as<Eigen::Vector3d>(Eigen::Vector3d::Zero())
+                            .asDiagonal();
+    Eigen::Matrix6d G = makeG(I, m);
     Eigen::Vector3d leg_offset = node["leg_offset"].as<Eigen::Vector3d>();
-    Eigen::Matrix3d I;
-    Eigen::Matrix<double, 6, 6> G;
     Eigen::Isometry3d M;
     std::array<Eigen::Isometry3d, 4> T_chassis_shoulder;
-
-    I.diagonal() = node["inertia"].as<Eigen::Vector3d>(Eigen::Vector3d::Zero());
-
-    G.topLeftCorner<3, 3>() = I;
-    G.bottomRightCorner<3, 3>().diagonal().setConstant(m);
 
     M.translation() = node["home"].as<Eigen::Vector3d>(Eigen::Vector3d::Zero());
 

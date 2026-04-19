@@ -92,9 +92,32 @@ void Leg::id() {
   }
 }
 
+void Leg::liftTo(const Eigen::Isometry3d &T) {
+  state = LIFT;
+  liftpf = T.translation();
+}
+
 void Leg::run() {
-  ik();
-  id();
+  switch (state) {
+  case HOMING:
+  case IDLE: {
+    thetalist.setConstant(NAN);
+    dthetalist.setZero();
+    ddthetalist.setZero();
+    taulist.setZero();
+  } break;
+  case RUNNING: {
+    ik();
+    id();
+  }
+  case LIFT: {
+    // Set new setpoint
+    if (statep != LIFT)
+      pf.z() -= llift;
+    // Thoughts: Need to add a trajectory function that steps to the desired
+    // position, constrained by the max velocity. need to know dt
+  }
+  }
 }
 
 // void Leg::home() {
