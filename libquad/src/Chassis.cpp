@@ -3,31 +3,43 @@
 
 // TODO: at some point, update T and V with V and dV and dt
 
-void Chassis::ik() {
+bool Chassis::ik(const Eigen::Isometry3d &Ts0,
+                 const std::array<Eigen::Isometry3d, 4> &T4,
+                 std::array<Eigen::Vector3d, 4> &pf,
+                 Eigen::Matrix<double, 6, 12> *Jinv) {
   for (unsigned nleg = 0; nleg < 4; nleg++) {
     Eigen::Isometry3d T04 = (Ms * Ts0).inverse() * T4[nleg];
-    legs[nleg]->pf = (M01[nleg].inverse() * T04).translation();
-
-    Jinv.block<3, 3>(0, nleg * 3) =
+    pf[nleg] = (M01[nleg].inverse() * T04).translation();
+    if (Jinv == nullptr)
+      continue;
+    (*Jinv).block<3, 3>(0, nleg * 3) =
         T04.translation().asSkewSymmetric() * T04.linear();
-    Jinv.block<3, 3>(3, nleg * 3) = T04.linear();
+    (*Jinv).block<3, 3>(3, nleg * 3) = T04.linear();
   }
-  Eigen::Vector<double, 12> vf = Jinv.transpose() * Vb;
-  for (unsigned nleg = 0; nleg < 4; nleg++) {
-    legs[nleg]->vf = vf.segment<3>(nleg * 3);
-  }
+  return true;
 }
 
-void Chassis::id() {
-
-  Eigen::Vector<double, 12> ff;
-  ff = Jinv.transpose() * Fb;
+bool Chassis::ivk(const Eigen::Vector6d &Vb,
+                  const Eigen::Matrix<double, 6, 12> &Jinv,
+                  std::array<Eigen::Vector3d, 4> &vf) {
+  Eigen::Vector<double, 12> vfStacked = Jinv.transpose() * Vb;
   for (unsigned nleg = 0; nleg < 4; nleg++) {
-    legs[nleg]->ffoot = ff.segment<3>(nleg * 3);
+    vf[nleg] = vfStacked.segment<3>(nleg * 3);
   }
+  return true;
 }
 
-void Chassis::nvp() {
+bool Chassis::id(std::array<Eigen::Vector3d, 4> &ff) {
+  Eigen::Vector<double, 12> ffStacked;
+  ffStacked = Jinv.transpose() * Fb;
+  for (unsigned nleg = 0; nleg < 4; nleg++) {
+    ff[nleg] = ffStacked.segment<3>(nleg * 3);
+  }
+  return true;
+}
+
+bool Chassis::nvp(const Eigen::Vector6d &F,
+                  const std::array<std::shared_ptr<Leg>, 4> &legs, double &K) {
   std::vector<unsigned> runningLegId;
   Eigen::Matrix<double, 3, 4> pfoot;
   for (unsigned nleg : {0, 1, 3, 2}) {
@@ -37,7 +49,7 @@ void Chassis::nvp() {
   }
 
   if (runningLegId.size() < 2)
-    return;
+    return false;
 
   else if (runningLegId.size() == 3) {
     footPlane = footPlane.Through(pfoot.col(runningLegId[0]),
@@ -74,12 +86,12 @@ void Chassis::nvp() {
   }
 
   // Create rollover normalized wrench
-  Eigen::Vector6d F;
-  F << F.tail<3>(), Fb.head<3>();
-  F /= Fb.head<3>().norm();
+  Eigen::Vector6d Fhat;
+  Fhat << F.tail<3>(), F.head<3>();
+  Fhat /= F.head<3>().norm();
 
   // Margin of Static Stability K = S^T * Delta * F
-  Eigen::VectorXd Klist = Slist.transpose() * F;
+  Eigen::VectorXd Klist = Slist.transpose() * Fhat;
 
   // Find minimum K
   K = Klist.minCoeff();
@@ -92,12 +104,21 @@ void Chassis::nvp() {
       iRolloverLeg = i;
     }
   }
+  return true;
 }
 
 void Chassis::run() {
-  ik();
-  id();
-  nvp();
+  std::array<Eigen::Vector3d, 4> pf, vf, ff;
+  ik(Ts0, T4, pf, &Jinv);
+  ivk(Vb, Jinv, vf);
+  id(ff);
+  for (unsigned nleg = 0; nleg < 4; nleg++) {
+    legs[nleg]->pf = pf[nleg];
+    legs[nleg]->vf = vf[nleg];
+    legs[nleg]->ff = ff[nleg];
+  }
+  Eigen::Vector6d F = (Ms * Ts0).inverse().Ad().transpose() * Fb;
+  nvp(F, legs, K);
   if (K < 0.1) { // TODO: Tune
     // legs[iRolloverLeg]->lift();
   }

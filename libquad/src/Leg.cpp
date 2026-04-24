@@ -80,7 +80,7 @@ bool Leg::id(Eigen::Vector<double, njoints> &taulist) {
   Vi.col(0).setZero();
   dVi.col(0) << Eigen::Vector3d::Zero(), -g;
   AdTi[njoints] = Mlist[njoints].inverse().Ad();
-  Fi << Eigen::Vector3d::Zero(), ffoot;
+  Fi << Eigen::Vector3d::Zero(), ff;
 
   // forward pass
   for (int i = 0; i < njoints; i++) {

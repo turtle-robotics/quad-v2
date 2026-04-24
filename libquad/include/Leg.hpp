@@ -19,6 +19,20 @@ constexpr int njoints = 3;
  */
 class Leg {
 public:
+  /**
+   * @brief Leg Constructor
+   *
+   * @param[in] l 4-vector of leg lengths
+   * @param[in] Slist 6x3 list of joint screw axes
+   * @param[in] M Transform of the leg at zero joint angles
+   * @param[in] Mlist Array of 4 transforms between joints at zero joint angles,
+   * beginning from the base (Identity)
+   * @param[in] Glist Array of 3 6x6 spatial inertia matrices for the leg links
+   * @param[in] thetaRange 3x2 matrix of joint angle limits [low, high]
+   * @param[in] thetadMax 3-vector of joint velocity limits
+   * @param[in] thetaddMax 3-vector of joint acceleration limits
+   * @param[in] tauMax 3-vector of joint torque limits
+   */
   Leg(Eigen::Vector<double, njoints + 1> &l,
       Eigen::Matrix<double, 6, njoints> &Slist, Eigen::Isometry3d &M,
       std::array<Eigen::Isometry3d, njoints + 1> &Mlist,
@@ -48,7 +62,7 @@ public:
    *
    * @param[in] pf 3-vector foot position
    * @param[out] thetalist 3-vector resultant joint angles
-   * @param[out] Jinv 3x3 resultant Jacobian inverse (thetad/dp)
+   * @param[out] Jinv 3x3 resultant Jacobian inverse (dtheta/dp)
    */
   bool ik(const Eigen::Vector3d &pf, Eigen::Vector3d &thetalist,
           Eigen::Matrix3d *Jinv = nullptr);
@@ -70,7 +84,7 @@ public:
    *
    * Compute joint torque from foot state
    *
-   * @param[in] T SE(3) foot pose
+   * @param[out] taulist joint torques
    */
   bool id(Eigen::Vector<double, njoints> &taulist);
 
@@ -110,11 +124,11 @@ public:
     statep = IDLE;
 
   // Foot space
-  Eigen::Vector3d pf;    ///< Foot position [m]
-  Eigen::Vector3d vf;    ///< Foot velocity [m/s]
-  Eigen::Vector3d dvf;   ///< Foot acceleration [m/s^2]
-  Eigen::Vector3d ffoot; ///< Foot force [N]
-  Eigen::Vector3d g;     ///< Gravity [m/s^2]
+  Eigen::Vector3d pf;  ///< Foot position [m]
+  Eigen::Vector3d vf;  ///< Foot velocity [m/s]
+  Eigen::Vector3d dvf; ///< Foot acceleration [m/s^2]
+  Eigen::Vector3d ff;  ///< Foot force [N]
+  Eigen::Vector3d g;   ///< Gravity [m/s^2]
   // Eigen::Vector3d liftpf; //< m
   // double llift = 0.02;    // m TODO: Set from config
 
