@@ -1,5 +1,7 @@
 option(BUILD_TESTING "..." OFF)
 
+find_package(Eigen3 REQUIRED)
+
 add_library(libquad STATIC src/Chassis.cpp src/Leg.cpp)
 target_include_directories(libquad PUBLIC include)
 target_link_libraries(libquad PUBLIC Eigen3::Eigen)
@@ -15,6 +17,7 @@ find_package(Doxygen REQUIRED)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../assets/turtle.svg ${CMAKE_CURRENT_BINARY_DIR}/turtle.svg @ONLY)
 set(DOXYGEN_GENERATE_HTML YES)
 set(DOXYGEN_GENERATE_LATEX YES)
+set(DOXYGEN_EXTRACT_PRIVATE YES)
 set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/docs")
 set(DOXYGEN_PROJECT_LOGO "${CMAKE_BINARY_DIR}/docs")
 set(DOXYGEN_HTML_COLORSTYLE_HUE 0)
