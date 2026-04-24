@@ -10,10 +10,11 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
     return -1;
   }
 
+  std::cout << "Configuring robot..." << std::endl;
 #if defined(__aarch64__)
+  std::cout << "Configuring real-time" << std::endl;
   mjbots::pi3hat::ConfigureRealtime();
 #endif
-  std::cout << "Configuring robot..." << std::endl;
 
   // Create motors
   home_joint_pose = conf["home_pose"].as<JointPose>();
@@ -177,7 +178,7 @@ void Robot::loop(unsigned int us) {
     for (unsigned i = 0; i < 4; i++) {
       legs[i]->run();
       motorPosCmds[i] =
-          makePosCmd(legs[i]->thetalist, legs[i]->dthetalist, legs[i]->taulist);
+          makePosCmd(legs[i]->thetalist, legs[i]->thetadlist, legs[i]->taulist);
     }
 
     // int leg_id = 0;

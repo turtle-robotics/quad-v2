@@ -1,3 +1,13 @@
+/**
+ * @file matrixbase.hpp
+ *
+ * Provides Eigen plugins for MatrixBase
+ */
+
+/**
+ * @brief so(3) matrix exponent
+ * @return SO(3) rotation matrix
+ */
 inline Matrix<Scalar, 3, 3> exp3() const {
   assert(RowsAtCompileTime == 3 && ColsAtCompileTime == 3);
   AngleAxis<Scalar> theta{&this};
@@ -10,6 +20,10 @@ inline Matrix<Scalar, 3, 3> exp3() const {
   }
 }
 
+/**
+ * @brief se(3) matrix exponent
+ * @return SE(3) transformation
+ */
 inline Transform<Scalar, 3, Isometry> exp6() const {
   assert(RowsAtCompileTime == 4 && ColsAtCompileTime == 4);
   // Extract the angular velocity vector from the transformation matrix
@@ -36,6 +50,10 @@ inline Transform<Scalar, 3, Isometry> exp6() const {
   return T;
 }
 
+/**
+ * @brief 6-vector adjoint
+ * @return 6x6 adjoint matrix
+ */
 inline Matrix<Scalar, 6, 6> ad() const {
   assert(RowsAtCompileTime == 6 && ColsAtCompileTime == 1);
   return (Matrix<Scalar, 6, 6>()
@@ -46,7 +64,11 @@ inline Matrix<Scalar, 6, 6> ad() const {
       .finished();
 }
 
-inline Matrix<Scalar, 4, 4> asse3() const {
+/**
+ * @brief 3-vector as se(3) matrix
+ * @return se(3) matrix
+ */
+inline Matrix<Scalar, 4, 4> tose3() const {
   (
       Matrix<Scalar, 4, 4>()
           << this->template head<3>().asSkewSymmetric().toDenseMatrix(),

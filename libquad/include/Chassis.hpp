@@ -1,3 +1,7 @@
+/**
+ * @file Chassis.hpp
+ */
+
 #pragma once
 
 #include "Leg.hpp"
@@ -5,7 +9,7 @@
 #include <array>
 
 /**
- * @brief Quadruped chassis state
+ * @brief Quadruped Chassis
  *
  * The chassis class contains gemotry and mass properties for the chassis,
  * the chassis state, and functions to operate on the chassis state.
@@ -14,7 +18,6 @@
  * 1 is the shoulder frame
  * 4 is the foot frame, different for each foot
  */
-
 class Chassis {
 public:
   Chassis(Eigen::Matrix6d &G, Eigen::Isometry3d &M0,
@@ -46,7 +49,7 @@ public:
   double K;
   int iRolloverLeg;
 
-  // Legs
+  /* Legs */
   std::array<Eigen::Isometry3d, 4> T4;
   std::array<std::shared_ptr<Leg>, 4> legs;
 

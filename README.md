@@ -1,4 +1,4 @@
-![QUAD V2 Banner](banner.svg)
+![QUAD V2 Banner](assets/banner.svg)
 
 [![GitHub Org's stars](https://img.shields.io/github/stars/turtle-robotics?style=flat&logo=github&label=TURTLE%20Robotics&color=gold)](https://github.com/turtle-robotics)
 

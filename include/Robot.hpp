@@ -66,8 +66,6 @@ private:
   };
   int last_leg_id = 0;
 
-  double chassis_length, chassis_width;
-
   const std::shared_ptr<Chassis> chassis;
   const LEG_ARRAY(std::shared_ptr<Leg>) legs;
   const std::shared_ptr<Teleop> teleop;
@@ -76,6 +74,9 @@ private:
   LEG_JOINT_ARRAY(moteus::Query::Result) motorState;
   LEG_JOINT_ARRAY(PosCmd) motorPosCmds;
 
+#if defined(__aarch64__)
+  pi3hat::Attitude attitude;
+#endif
   double lower_min, lower_max;
 
   // Homing parameters

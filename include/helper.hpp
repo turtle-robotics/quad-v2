@@ -9,12 +9,12 @@
 
 using PosCmd = mjbots::moteus::PositionMode::Command;
 inline std::array<PosCmd, 3>
-makePosCmd(Eigen::Vector3d theta, Eigen::Vector3d dtheta = {0.0, 0.0, 0.0},
+makePosCmd(Eigen::Vector3d theta, Eigen::Vector3d thetad = {0.0, 0.0, 0.0},
            Eigen::Vector3d tau = {0.0, 0.0, 0.0}) {
   std::array<PosCmd, 3> posCmds;
   for (unsigned i = 0; i < 3; i++) {
     posCmds[i] = {.position = theta(i),
-                  .velocity = dtheta(i),
+                  .velocity = thetad(i),
                   .feedforward_torque = tau(i)};
   }
   return posCmds;

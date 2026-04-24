@@ -14,8 +14,8 @@ Leg makeLeg(int i) {
   std::array<Eigen::Isometry3d, njoints + 1> Mlist;
   std::array<Eigen::Matrix6d, njoints> Glist;
   Eigen::Matrix<double, njoints, 2> thetaRange;
-  Eigen::Vector<double, njoints> dthetaMax;
-  Eigen::Vector<double, njoints> ddthetaMax;
+  Eigen::Vector<double, njoints> thetadMax;
+  Eigen::Vector<double, njoints> thetaddMax;
   Eigen::Vector<double, njoints> tauMax;
 
   l << 0.115, 0.2, 0.2, 0.020;
@@ -37,10 +37,10 @@ Leg makeLeg(int i) {
 
   // TODO: Include feasible limits
   thetaRange = Eigen::Matrix<double, njoints, 2>::Zero();
-  dthetaMax = Eigen::Vector<double, njoints>::Zero();
-  ddthetaMax = Eigen::Vector<double, njoints>::Zero();
+  thetadMax = Eigen::Vector<double, njoints>::Zero();
+  thetaddMax = Eigen::Vector<double, njoints>::Zero();
   tauMax = Eigen::Vector<double, njoints>::Zero();
-  return {l, Slist, M, Mlist, Glist, thetaRange, dthetaMax, ddthetaMax, tauMax};
+  return {l, Slist, M, Mlist, Glist, thetaRange, thetadMax, thetaddMax, tauMax};
 }
 
 TEST(QUADLegTest, IKTest) {
@@ -55,19 +55,11 @@ TEST(QUADLegTest, IKTest) {
   const Eigen::Vector3d expected_thetalist2{+0.5236, +0.5213, -1.0425};
   const Eigen::Vector3d expected_thetalist3{+0.5236, -0.5213, +1.0425};
   const Eigen::Vector3d expected_thetalist4{-0.5236, +0.5213, -1.0425};
-  leg1.pf = pf;
-  leg2.pf = pf;
-  leg3.pf = pf;
-  leg4.pf = pf;
-  leg1.thetalist = thetalist1;
-  leg2.thetalist = thetalist2;
-  leg3.thetalist = thetalist3;
-  leg4.thetalist = thetalist4;
 
-  leg1.ik();
-  leg2.ik();
-  leg3.ik();
-  leg4.ik();
+  leg1.ik(pf, thetalist1);
+  leg2.ik(pf, thetalist2);
+  leg3.ik(pf, thetalist3);
+  leg4.ik(pf, thetalist4);
 
   EXPECT_TRUE(thetalist1.isApprox(expected_thetalist1, 1e-4))
       << "Values should match:\n"
@@ -96,35 +88,35 @@ TEST(QUADLegTest, IKTest) {
 //   Leg leg3 = makeLeg(2);
 //   Leg leg4 = makeLeg(3);
 //   Eigen::Translation3d pf{0.0, 0.0, 0.25};
-//   Eigen::Vector3d dthetalist1, dthetalist2, dthetalist3, dthetalist4;
+//   Eigen::Vector3d thetadlist1, thetadlist2, thetadlist3, thetadlist4;
 //   Eigen::Vector3d vf{0.1, 0.2, 0.3};
-//   leg1.ivk(vf, pf, dthetalist1);
-//   leg2.ivk(vf, pf, dthetalist2);
-//   leg3.ivk(vf, pf, dthetalist3);
-//   leg4.ivk(vf, pf, dthetalist4);
+//   leg1.ivk(vf, pf, thetadlist1);
+//   leg2.ivk(vf, pf, thetadlist2);
+//   leg3.ivk(vf, pf, thetadlist3);
+//   leg4.ivk(vf, pf, thetadlist4);
 
-//   Eigen::Vector3d expected_dthetalist1{+1.6226, -0.4966, +1.9973};
-//   Eigen::Vector3d expected_dthetalist2{-1.6226, +0.4966, -1.9973};
-//   Eigen::Vector3d expected_dthetalist3{+1.6226, -1.5007, +1.9973};
-//   Eigen::Vector3d expected_dthetalist4{-1.6226, +1.5007, -1.9973};
+//   Eigen::Vector3d expected_thetadlist1{+1.6226, -0.4966, +1.9973};
+//   Eigen::Vector3d expected_thetadlist2{-1.6226, +0.4966, -1.9973};
+//   Eigen::Vector3d expected_thetadlist3{+1.6226, -1.5007, +1.9973};
+//   Eigen::Vector3d expected_thetadlist4{-1.6226, +1.5007, -1.9973};
 
-//   EXPECT_TRUE(dthetalist1.isApprox(expected_dthetalist1, 1e-4))
+//   EXPECT_TRUE(thetadlist1.isApprox(expected_thetadlist1, 1e-4))
 //       << "Values should match:\n"
-//       << dthetalist1 << "\n\n"
-//       << expected_dthetalist1;
+//       << thetadlist1 << "\n\n"
+//       << expected_thetadlist1;
 
-//   EXPECT_TRUE(dthetalist2.isApprox(expected_dthetalist2, 1e-4))
+//   EXPECT_TRUE(thetadlist2.isApprox(expected_thetadlist2, 1e-4))
 //       << "Values should match:\n"
-//       << dthetalist2 << "\n\n"
-//       << expected_dthetalist2;
+//       << thetadlist2 << "\n\n"
+//       << expected_thetadlist2;
 
-//   EXPECT_TRUE(dthetalist3.isApprox(expected_dthetalist3, 1e-4))
+//   EXPECT_TRUE(thetadlist3.isApprox(expected_thetadlist3, 1e-4))
 //       << "Values should match:\n"
-//       << dthetalist3 << "\n\n"
-//       << expected_dthetalist3;
+//       << thetadlist3 << "\n\n"
+//       << expected_thetadlist3;
 
-//   EXPECT_TRUE(dthetalist4.isApprox(expected_dthetalist4, 1e-4))
+//   EXPECT_TRUE(thetadlist4.isApprox(expected_thetadlist4, 1e-4))
 //       << "Values should match:\n"
-//       << dthetalist4 << "\n\n"
-//       << expected_dthetalist4;
+//       << thetadlist4 << "\n\n"
+//       << expected_thetadlist4;
 // }

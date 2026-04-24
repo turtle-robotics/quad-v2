@@ -11,6 +11,19 @@ target_compile_definitions(
   EIGEN_MATRIXBASE_PLUGIN="eigen_plugins/matrixbase.hpp"
 )
 
+find_package(Doxygen REQUIRED)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/../assets/turtle.svg ${CMAKE_CURRENT_BINARY_DIR}/turtle.svg @ONLY)
+set(DOXYGEN_GENERATE_HTML YES)
+set(DOXYGEN_GENERATE_LATEX NO)
+set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/docs")
+set(DOXYGEN_PROJECT_LOGO "${CMAKE_BINARY_DIR}/docs")
+set(DOXYGEN_HTML_COLORSTYLE_HUE 0)
+set(DOXYGEN_HTML_COLORSTYLE_SAT 255)
+set(DOXYGEN_HTML_COLORSTYLE_GAMMA 74)
+set(DOXYGEN_PROJECT_LOGO ${CMAKE_CURRENT_BINARY_DIR}/turtle.svg)
+set(DOXYGEN_PROJECT_ICON ${CMAKE_CURRENT_BINARY_DIR}/turtle.svg)
+doxygen_add_docs(libquaddocs ${CMAKE_CURRENT_SOURCE_DIR} COMMENT "Generating API documentation")
+
 if(BUILD_TESTING)
   enable_testing()
   find_package(GTest REQUIRED)

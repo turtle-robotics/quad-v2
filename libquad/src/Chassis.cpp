@@ -83,7 +83,7 @@ void Chassis::nvp() {
 
   // Find minimum K
   K = Klist.minCoeff();
-  int ip = 3;
+  ip = 3;
   double KfootMin = 0.0;
   for (int i = 0; i < Klist.rows(); ip = i, i++) {
     double Kfoot = Klist(ip) * Klist(i);
@@ -99,6 +99,6 @@ void Chassis::run() {
   id();
   nvp();
   if (K < 0.1) { // TODO: Tune
-    legs[iRolloverLeg]->lift();
+    // legs[iRolloverLeg]->lift();
   }
 }

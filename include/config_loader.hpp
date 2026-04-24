@@ -27,8 +27,8 @@ struct JointProperties {
   double l;                  // m
   Eigen::Matrix6d G;         // kg*m^2, kg
   double thetaMax, thetaMin; // rad
-  double dthetaMax;          // rad/s
-  double ddthetaMax;         // rad/s^2
+  double thetadMax;          // rad/s
+  double thetaddMax;         // rad/s^2
   double tauMax;             // N*m
 };
 
@@ -123,8 +123,8 @@ template <> struct convert<JointProperties> {
     rhs.G = makeG(I, m);
     rhs.thetaMin = node["thetaMin"].as<double>(-INFINITY);
     rhs.thetaMax = node["thetaMax"].as<double>(INFINITY);
-    rhs.dthetaMax = node["dthetaMax"].as<double>(INFINITY);
-    rhs.ddthetaMax = node["ddthetaMax"].as<double>(INFINITY);
+    rhs.thetadMax = node["thetadMax"].as<double>(INFINITY);
+    rhs.thetaddMax = node["thetaddMax"].as<double>(INFINITY);
     rhs.tauMax = node["tauMax"].as<double>(INFINITY);
     return true;
   }
@@ -149,8 +149,8 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
     Eigen::Matrix<double, 6, 3> Slist;
     std::array<Eigen::Matrix6d, 3> Glist;
     Eigen::Matrix<double, 3, 2> thetaRange;
-    Eigen::Vector3d dthetaMax;
-    Eigen::Vector3d ddthetaMax;
+    Eigen::Vector3d thetadMax;
+    Eigen::Vector3d thetaddMax;
     Eigen::Vector3d tauMax;
 
     for (unsigned nLeg = 0; nLeg < 4; nLeg++) {
@@ -161,8 +161,8 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
           l(j) = joint.l;
           thetaRange(j, 0) = joint.thetaMax;
           thetaRange(j, 1) = joint.thetaMin;
-          dthetaMax(j) = joint.dthetaMax;
-          ddthetaMax(j) = joint.ddthetaMax;
+          thetadMax(j) = joint.thetadMax;
+          thetaddMax(j) = joint.thetaddMax;
           tauMax(j) = joint.tauMax;
           j++;
         }
@@ -176,7 +176,7 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
       Mlist[2] = Eigen::Translation3d{-l[1], ySign[nLeg] * l[0], 0.0};
       Mlist[3] = Eigen::Translation3d{l[2] - l[1], ySign[nLeg] * l[0], 0.0};
       rhs[nLeg] = std::make_shared<Leg>(l, Slist, M, Mlist, Glist, thetaRange,
-                                        dthetaMax, ddthetaMax, tauMax);
+                                        thetadMax, thetaddMax, tauMax);
     }
     return true;
   }
