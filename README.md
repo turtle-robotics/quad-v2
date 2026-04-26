@@ -1,20 +1,22 @@
 <img src="banner.svg" alt="QUAD V2 Banner" style="width:100%;max-height:400px;"/>
 
-[![GitHub Org's stars](https://img.shields.io/github/stars/turtle-robotics?style=flat&logo=github&label=TURTLE%20Robotics&color=gold)](https://github.com/turtle-robotics)
+[![GitHub Org's stars](https://img.shields.io/github/stars/turtle-robotics?style=flat&logo=github&label=TURTLE%20Robotics&color=gold)](https://github.com/turtle-robotics) ![Build](https://github.com/turtle-robotics/quad-v2/actions/workflows/build.yml/badge.svg)
 
 Source code for the second revision of TURTLE's quadruped project (QUAD).
 
 # Dependencies
-Build requires CMake (with ninja) and the following packages:
+Build requires CMake (with Make) and the following packages:
  - Debian/Ubuntu: `apt install libeigen3-dev libspdlog-dev libgtest-dev`
  - Arch: `pacman -S eigen spdlog gtest`
+
+Building for Raspberry Pi requires an aarch64 compiler: `aarch64-linux-gnu-gcc`
 
 Optionally Doxygen can be used to generate documentation for this project.
 
 # Build
 ## Generate Buildsystem (once on setup)
 ```sh
-cmake -B build --fresh --preset rpi
+cmake --fresh --preset rpi
 ```
 
 > [!NOTE]
@@ -23,10 +25,10 @@ cmake -B build --fresh --preset rpi
 ## Build the Project
 To build:
 ```sh
-make -C build
+make -C build-rpi
 ```
 
 To build & deploy to the robot:
 ```sh
-make -C build deploy
+make -C build-rpi deploy
 ```

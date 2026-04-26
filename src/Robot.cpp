@@ -13,7 +13,7 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
   std::cout << "Configuring robot..." << std::endl;
 #if defined(__aarch64__)
   std::cout << "Configuring real-time" << std::endl;
-  mjbots::pi3hat::ConfigureRealtime();
+  mjbots::pi3hat::ConfigureRealtime(0);
 #endif
 
   // Create motors
@@ -242,7 +242,7 @@ int Robot::homeMotors() {
   return 1;
 }
 
-// int Robot::gotoCartesianPose(const std::map<int, Eigen::Translation3d>
+// int Robot::gotoCartesianPose(const std::map<int, Eigen::Vector3d>
 // &legPose,
 //                              double max_torque) {
 //   std::map<int, double> jointPose;
@@ -361,4 +361,13 @@ void Robot::printStatus() {
   }
   ::printf("\033[%dA", motorState.size() + legs.size() + 2);
   ::fflush(stdout);
+}
+
+bool Robot::setJointPos(JointPose &jointPos) {
+  for (unsigned i; i < 4; i++) {
+    for (unsigned j; j < 3; j++) {
+      motors[i][j]->DiagnosticCommand("d cfg-set-output " +
+                                      std::to_string(jointPos[i][j]));
+    }
+  }
 }

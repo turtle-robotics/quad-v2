@@ -87,7 +87,7 @@ TEST(QUADLegTest, IKTest) {
 //   Leg leg2 = makeLeg(1);
 //   Leg leg3 = makeLeg(2);
 //   Leg leg4 = makeLeg(3);
-//   Eigen::Translation3d pf{0.0, 0.0, 0.25};
+//   Eigen::Vector3d pf{0.0, 0.0, 0.25};
 //   Eigen::Vector3d thetadlist1, thetadlist2, thetadlist3, thetadlist4;
 //   Eigen::Vector3d vf{0.1, 0.2, 0.3};
 //   leg1.ivk(vf, pf, thetadlist1);

@@ -33,7 +33,7 @@ struct JointProperties {
 };
 
 inline Eigen::Matrix<double, 6, 3>
-makeSlist(const Eigen::Vector3d &l, const double &xSign, const double &ySign) {
+makeSlist(const Eigen::Vector3d &l, const double xSign, const double ySign) {
   Eigen::Matrix3d q, s;
   q << 0.0, 0.0, 0.0,           // q1
       0.0, ySign * l[0], 0.0,   // q2
@@ -169,12 +169,19 @@ template <> struct convert<std::array<std::shared_ptr<Leg>, 4>> {
         l(j) = foot.l;
       }
       Slist = makeSlist(l.head<3>(), xSign[nLeg], ySign[nLeg]);
-      M = Eigen::Translation3d{l[2] - l[1], ySign[nLeg] * l[0], 0.0};
+      M.setIdentity();
+      M.translation() = Eigen::Vector3d{l[2] - l[1], ySign[nLeg] * l[0], 0.0};
 
-      Mlist[0] = Eigen::Translation3d{0.0, 0.0, 0.0};
-      Mlist[1] = Eigen::Translation3d{0.0, ySign[nLeg] * l[0], 0.0};
-      Mlist[2] = Eigen::Translation3d{-l[1], ySign[nLeg] * l[0], 0.0};
-      Mlist[3] = Eigen::Translation3d{l[2] - l[1], ySign[nLeg] * l[0], 0.0};
+      Mlist[0].setIdentity();
+      Mlist[1].setIdentity();
+      Mlist[2].setIdentity();
+      Mlist[3].setIdentity();
+
+      Mlist[0].translation() = Eigen::Vector3d{0.0, 0.0, 0.0};
+      Mlist[1].translation() = Eigen::Vector3d{0.0, ySign[nLeg] * l[0], 0.0};
+      Mlist[2].translation() = Eigen::Vector3d{-l[1], ySign[nLeg] * l[0], 0.0};
+      Mlist[3].translation() =
+          Eigen::Vector3d{l[2] - l[1], ySign[nLeg] * l[0], 0.0};
       rhs[nLeg] = std::make_shared<Leg>(l, Slist, M, Mlist, Glist, thetaRange,
                                         thetadMax, thetaddMax, tauMax);
     }
@@ -201,8 +208,9 @@ template <> struct convert<std::shared_ptr<Chassis>> {
     M.translation() = node["home"].as<Eigen::Vector3d>(Eigen::Vector3d::Zero());
 
     for (unsigned nleg = 0; nleg < 4; nleg++) {
-      T_chassis_shoulder[nleg] =
-          Eigen::Translation3d{leg_dir[nleg].cwiseProduct(leg_offset)};
+      T_chassis_shoulder[nleg].setIdentity();
+      T_chassis_shoulder[nleg].translation() =
+          leg_dir[nleg].cwiseProduct(leg_offset);
     }
 
     rhs = std::make_shared<Chassis>(G, M, T_chassis_shoulder);
@@ -237,6 +245,7 @@ template <> struct convert<std::shared_ptr<pi3hat::Pi3HatMoteusTransport>> {
       }
     }
     rhs = std::make_shared<pi3hat::Pi3HatMoteusTransport>(toptions);
+
     return true;
   }
 };

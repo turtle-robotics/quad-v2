@@ -9,20 +9,20 @@ jobs:
     container: archlinux:base-devel
     steps:
       - name: Install dependencies
-        run: pacman-key --init && pacman -Syu --noconfirm git cmake ninja doxygen gtest
-          eigen spdlog
+        run: pacman-key --init && pacman -Syu --noconfirm git aarch64-linux-gnu-gcc
+          cmake doxygen gtest eigen spdlog
       - name: Checkout repository
         uses: actions/checkout@v6
       - name: Setup CMake
-        run: cmake --preset local -DBUILD_TESTING=OFF
+        run: cmake --preset rpi
       - name: Build code
-        run: cmake --build build
+        run: cmake --build build-rpi
       - name: Build docs
-        run: cmake --build build --target libquaddocs
+        run: cmake --build build-rpi --target libquaddocs
       - name: Upload GitHub Pages artifacts
         uses: actions/upload-pages-artifact@v5
         with:
-          path: build/docs/html
+          path: build-rpi/docs/html
   deploy-docs:
     environment:
       name: github-pages

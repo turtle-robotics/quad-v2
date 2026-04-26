@@ -17,13 +17,13 @@ add_compile_options(-static-libstdc++ -std=c++20 -Wextra -Wno-psabi -Wno-depreca
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG master
+  GIT_TAG yaml-cpp-0.9.0
 )
 
 FetchContent_Declare(
   moteus
   GIT_REPOSITORY https://github.com/mjbots/moteus.git
-  GIT_TAG 0.1-20260121
+  GIT_TAG 0.1-20260424
 )
 
 FetchContent_Declare(
@@ -33,20 +33,17 @@ FetchContent_Declare(
 )
 
 find_package(Eigen3 REQUIRED)
-find_package(spdlog REQUIRED)
+# find_package(spdlog REQUIRED)
 FetchContent_MakeAvailable(yaml-cpp)
 # find_package(HDF5 COMPONENTS C CXX REQUIRED)
-# find_package(GTest REQUIRED)
 FetchContent_MakeAvailable(moteus)
 
 add_subdirectory(libquad)
 
 add_executable(quad src/main.cpp src/Robot.cpp src/Teleop.cpp)
-
-
 target_include_directories(quad PUBLIC include)
 target_compile_options(quad PUBLIC -Werror)
-target_link_libraries(quad PUBLIC libquad Eigen3::Eigen yaml-cpp::yaml-cpp moteus::cpp spdlog::spdlog_header_only)
+target_link_libraries(quad PUBLIC libquad Eigen3::Eigen yaml-cpp::yaml-cpp moteus::cpp)
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
   FetchContent_MakeAvailable(pi3hat)

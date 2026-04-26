@@ -25,7 +25,6 @@ class Robot {
 public:
   typedef LEG_JOINT_ARRAY(std::shared_ptr<moteus::Controller>) Motors;
   typedef LEG_JOINT_ARRAY(double) JointPose;
-
   Robot(std::shared_ptr<Chassis> chassis, LEG_ARRAY(std::shared_ptr<Leg>) legs,
         std::shared_ptr<Teleop> teleop, Motors motors)
       : chassis{chassis}, legs{legs}, teleop{teleop}, motors{motors} {};
@@ -111,4 +110,6 @@ private:
   JointPose deploy_a_cmds;
   JointPose deploy_b_cmds;
   JointPose deploy_c_cmds;
+
+  bool setJointPos(JointPose &jointPos);
 };

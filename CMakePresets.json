@@ -5,19 +5,21 @@
       "name": "rpi",
       "displayName": "Cross Compile for Raspberry Pi",
       "binaryDir": "${sourceDir}/build-rpi",
+      "generator": "Unix Makefiles",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/assets/toolchain-aarch64.cmake",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true,
         "YAML_CPP_BUILD_TESTS": "OFF",
-        "YAML_CPP_BUILD_TOOLS": "OFF"
+        "YAML_CPP_BUILD_TOOLS": "OFF",
+        "BUILD_TESTING": "OFF"
       }
     },
     {
       "name": "local",
       "displayName": "Compile for local machine",
       "binaryDir": "${sourceDir}/build",
-      "generator": "Ninja",
+      "generator": "Unix Makefiles",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/assets/toolchain-x86_64.cmake",
         "CMAKE_BUILD_TYPE": "Debug",
