@@ -1,10 +1,10 @@
-#include "Teleop.hpp"
+#include "HID.hpp"
 
 #include <fcntl.h>
 #include <iostream>
 #include <unistd.h>
 
-int Teleop::init() {
+int HID::init() {
   gamepad = open(gamepad_path.c_str(), O_RDONLY | O_NONBLOCK);
   if (gamepad == -1) {
     std::cerr << "Failed to open gamepad device at " << gamepad_path
@@ -15,7 +15,7 @@ int Teleop::init() {
   return 0;
 }
 
-int Teleop::readGamepad() {
+int HID::readGamepad() {
   ssize_t r1 = read(gamepad, events, sizeof events);
   if (r1 == -1)
     if (errno == EWOULDBLOCK || errno == EAGAIN) { // these are fine

@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   std::cout << "Starting robot with config file " << config_file << std::endl;
   YAML::Node config = YAML::LoadFile(config_file);
 
-  robot = config.as<std::shared_ptr<Robot>>();
+  robot = makeRobot(config);
 
   if (robot->configure(config, configure_motors, write_motor_config) != 0) {
     std::cerr << "Failed to configure robot." << std::endl;
@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
     std::cerr << "Failed to initialize robot." << std::endl;
     return 1;
   }
+
 
   std::cout << "Running..." << std::endl;
   while (true) {

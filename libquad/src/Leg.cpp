@@ -34,7 +34,17 @@ bool Leg::ik(const Eigen::Vector3d &pf, Eigen::Vector3d &thetalist,
                                         (2.0 * l[1] * sqrt(d2)));
   thetalist[2] =
       -acos((pow(l[1], 2) + pow(l[2], 2) - d2) / (2.0 * l[1] * l[2]));
+
+  // set direction
   thetalist = thetalist.cwiseProduct(thetadir);
+
+  // enforce joint limits
+  if ((thetalist.array() < thetaRange.col(0).array()).any() ||
+      (thetalist.array() > thetaRange.col(1).array()).any()) {
+    thetalist =
+        thetalist.cwiseMax(thetaRange.col(0)).cwiseMin(thetaRange.col(1));
+    return false;
+  }
 
   /* Inverse Velocity Kinematics */
   if (Jinv == nullptr)

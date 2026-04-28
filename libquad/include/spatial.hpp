@@ -1,5 +1,6 @@
 /**
  * @file spatial.hpp
+ * @brief Functions for creating/manipulating spatial matrices
  */
 
 #pragma once

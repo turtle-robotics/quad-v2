@@ -1,5 +1,6 @@
 /**
  * @file Chassis.hpp
+ * @brief Contains the quadruped Chassis class
  */
 
 #pragma once
@@ -47,6 +48,7 @@ public:
           const std::array<Eigen::Isometry3d, 4> &T4,
           std::array<Eigen::Vector3d, 4> &pf,
           Eigen::Matrix<double, 6, 12> *Jinv);
+          
   /**
    * @brief Inverse Velocity Kinematics
    *
@@ -87,7 +89,7 @@ public:
   /* Chassis state */
   Eigen::Isometry3d Ts0; ///< Tf chassis in home frame [SE(3)]
   Eigen::Vector6d Vb;    ///< Chassis twist [rad/s; m/s]
-  Eigen::Vector6d dVb;   ///< Chassis spatial acceleration [rad/s^2; m/s^2]
+  Eigen::Vector6d Vdb;   ///< Chassis spatial acceleration [rad/s^2; m/s^2]
   Eigen::Vector6d Fb;    ///< Chassis wrench [N*m; m]
 
   /* Rollover */

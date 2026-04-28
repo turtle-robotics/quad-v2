@@ -11,10 +11,8 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
   }
 
   std::cout << "Configuring robot..." << std::endl;
-#if defined(__aarch64__)
   std::cout << "Configuring real-time" << std::endl;
   mjbots::pi3hat::ConfigureRealtime(0);
-#endif
 
   // Create motors
   home_joint_pose = conf["home_pose"].as<JointPose>();
@@ -26,7 +24,7 @@ int Robot::configure(YAML::Node conf, bool configure_motors,
     std::cout << "Writing motor configuration..." << std::endl;
 
     std::string conf_str;
-    for (const auto &config_line : conf["motor_config"])
+    for (const auto &config_line : conf["motors"]["config"])
       for (const auto &leg_motors : motors)
         for (const auto &motor : leg_motors) {
           conf_str = "conf set " + config_line.as<std::string>();
@@ -70,7 +68,7 @@ int Robot::init() {
 
   // Initialize controller
   std::cout << "Initializing controller..." << std::endl;
-  if (teleop->init() != 0) {
+  if (hid.init() != 0) {
     std::cerr << "Failed to initialize teleop." << std::endl;
     return -1;
   }
@@ -93,9 +91,9 @@ void Robot::loop(unsigned int us) {
   // Change State
   switch (state) {
   case IDLE: {
-    if (teleop->home_joints) {
+    if (hid.home_joints) {
       state = HOMING;
-    } else if (teleop->deploy_legs) {
+    } else if (hid.deploy_legs) {
       if (legs_deployed) {
         state = DEPLOY_C;
       } else {
@@ -104,23 +102,23 @@ void Robot::loop(unsigned int us) {
     }
   } break;
   case HOMING: {
-    if (!teleop->home_joints) {
+    if (!hid.home_joints) {
       state = IDLE;
     }
   } break;
   case DEPLOY_A:
   case DEPLOY_B:
   case DEPLOY_C: {
-    if (!teleop->deploy_legs) {
+    if (!hid.deploy_legs) {
       state = IDLE;
     }
   } break;
   case RUNNING: {
     // Homing not allowed while running
-    if (teleop->home_joints) {
-      teleop->home_joints = false;
+    if (hid.home_joints) {
+      hid.home_joints = false;
     }
-    if (teleop->deploy_legs) {
+    if (hid.deploy_legs) {
       if (legs_deployed) {
         state = DEPLOY_C;
       } else {
@@ -136,14 +134,14 @@ void Robot::loop(unsigned int us) {
   } break;
   case HOMING: {
     if (homeMotors() == 1) {
-      teleop->home_joints = false;
+      hid.home_joints = false;
       state = IDLE;
     }
   } break;
   case DEPLOY_A: {
     if (gotoJointPose(deploy_a_cmds, deploy_torque) == 1) {
       if (legs_deployed) {
-        teleop->deploy_legs = false;
+        hid.deploy_legs = false;
         legs_deployed = false;
         state = IDLE;
       } else {
@@ -166,19 +164,19 @@ void Robot::loop(unsigned int us) {
         state = DEPLOY_B;
       } else {
         state = RUNNING;
-        teleop->deploy_legs = false;
+        hid.deploy_legs = false;
         legs_deployed = true;
       }
     }
   } break;
   case RUNNING: {
     // TODO: Gotta figure this one out
-    chassis->Vb = teleop->V;
-    chassis->run();
+    chassis.Vb = hid.V;
+    chassis.run();
     for (unsigned i = 0; i < 4; i++) {
-      legs[i]->run();
+      legs[i].run();
       motorPosCmds[i] =
-          makePosCmd(legs[i]->thetalist, legs[i]->thetadlist, legs[i]->taulist);
+          makePosCmd(legs[i].thetalist, legs[i].thetadlist, legs[i].taulist);
     }
 
     // int leg_id = 0;
@@ -186,17 +184,17 @@ void Robot::loop(unsigned int us) {
     //   leg_id++;
     //   Eigen::Vector3d v = 0.2 * teleop.V.tail<3>(); // body velocity in x, y,
     //   z
-    //   // leg->walk(v, us);
+    //   // leg.walk(v, us);
     //   JointPose jointAngles{
-    //       {leg_id * 10 + 1, leg->thetalist[0] * 0.5 * M_1_PI},
-    //       {leg_id * 10 + 2, leg->thetalist[1] * 0.5 * M_1_PI},
-    //       {leg_id * 10 + 3, leg->thetalist[2] * 0.5 * M_1_PI},
+    //       {leg_id * 10 + 1, leg.thetalist[0] * 0.5 * M_1_PI},
+    //       {leg_id * 10 + 2, leg.thetalist[1] * 0.5 * M_1_PI},
+    //       {leg_id * 10 + 3, leg.thetalist[2] * 0.5 * M_1_PI},
     //   };
     //   if (gotoJointPose(jointAngles) == 1) {
-    //     if (leg->state == Leg::LIFT) {
-    //       leg->state = Leg::PLACE;
-    //     } else if (leg->state == Leg::PLACE) {
-    //       leg->state = Leg::RUNNING;
+    //     if (leg.state == Leg::LIFT) {
+    //       leg.state = Leg::PLACE;
+    //     } else if (leg.state == Leg::PLACE) {
+    //       leg.state = Leg::RUNNING;
     //     }
     //   }
     // }
@@ -204,13 +202,13 @@ void Robot::loop(unsigned int us) {
   }
   if (state != RUNNING && prev_state == RUNNING) {
     for (auto &leg : legs) {
-      leg->state = Leg::IDLE;
+      leg.state = Leg::IDLE;
     }
   }
 
-  teleop->readGamepad();
+  hid.readGamepad();
   queryMotors();
-  printStatus();
+  // printStatus();
 }
 
 int Robot::homeMotors() {
@@ -322,14 +320,13 @@ void Robot::stopMotors() {
 
 void Robot::printStatus() {
   ::printf("\033[2KState: %s\n", state_names[state].c_str());
-  if (teleop->error) {
+  if (hid.error) {
     ::printf("\033[2KGamepad: Not Connected\n");
   } else {
     ::printf("\033[2KGamepad: w=(%6.3f,%6.3f,%6.3f) v=(%6.3f,%6.3f,%6.3f) "
              "home=%1d deploy=%1d\n",
-             teleop->V[0], teleop->V[1], teleop->V[2], teleop->V[3],
-             teleop->V[4], teleop->V[5], teleop->home_joints,
-             teleop->deploy_legs);
+             hid.V[0], hid.V[1], hid.V[2], hid.V[3], hid.V[4], hid.V[5],
+             hid.home_joints, hid.deploy_legs);
   }
 
   // Print Joint State
@@ -351,13 +348,13 @@ void Robot::printStatus() {
     ::printf("\033[2KLeg %d: state=%s p=(%6.3f,%6.3f,%6.3f) "
              "theta=(%6.3f,%6.3f,%6.3f)\n",
              leg_id,
-             leg->state == Leg::IDLE      ? "IDLE   "
-             : leg->state == Leg::LIFT    ? "LIFT   "
-             : leg->state == Leg::PLACE   ? "PLACE  "
-             : leg->state == Leg::RUNNING ? "RUNNING"
-                                          : "UNKNOWN",
-             leg->pf.x(), leg->pf.y(), leg->pf.z(), leg->thetalist[0],
-             leg->thetalist[1], leg->thetalist[2]);
+             leg.state == Leg::IDLE      ? "IDLE   "
+             : leg.state == Leg::LIFT    ? "LIFT   "
+             : leg.state == Leg::PLACE   ? "PLACE  "
+             : leg.state == Leg::RUNNING ? "RUNNING"
+                                         : "UNKNOWN",
+             leg.pf.x(), leg.pf.y(), leg.pf.z(), leg.thetalist[0],
+             leg.thetalist[1], leg.thetalist[2]);
   }
   ::printf("\033[%dA", motorState.size() + legs.size() + 2);
   ::fflush(stdout);
@@ -370,4 +367,22 @@ bool Robot::setJointPos(JointPose &jointPos) {
                                       std::to_string(jointPos[i][j]));
     }
   }
+}
+
+void Robot::cycleFrames() {
+  moteus::BlockingCallback cbk;
+  transport->Cycle(frames.data(), frames.size(), &replies, &imu, nullptr,
+                   nullptr, cbk.callback());
+  cbk.Wait();
+  attitude.w() = imu.attitude.w;
+  attitude.x() = imu.attitude.x;
+  attitude.y() = imu.attitude.y;
+  attitude.z() = imu.attitude.z;
+  chassis.Ts0.linear() = attitude.toRotationMatrix();
+  chassis.Vdb(3) = imu.accel_mps2.x;
+  chassis.Vdb(4) = imu.accel_mps2.y;
+  chassis.Vdb(5) = imu.accel_mps2.z;
+  chassis.Vb(0) = imu.rate_dps.x;
+  chassis.Vb(1) = imu.rate_dps.y;
+  chassis.Vb(2) = imu.rate_dps.z;
 }

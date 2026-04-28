@@ -44,7 +44,7 @@ bool Chassis::nvp(const Eigen::Vector6d &F,
   Eigen::Matrix<double, 3, 4> pfoot;
   for (unsigned nleg : {0, 1, 3, 2}) {
     pfoot.col(nleg) = legs[nleg]->pf;
-    if (legs[nleg]->state == Leg::state_t::RUNNING)
+    if (legs[nleg]->state == Leg::State::RUNNING)
       runningLegId.push_back(nleg);
   }
 

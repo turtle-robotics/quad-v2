@@ -1,5 +1,6 @@
 /**
  * @file Leg.hpp
+ * @brief Contains the quadruped Leg class
  */
 
 #pragma once
@@ -114,14 +115,7 @@ public:
   /**
    * @brief Leg State
    */
-  enum state_t {
-    IDLE,
-    HOMING,
-    RUNNING,
-    LIFT,
-    PLACE
-  } state = IDLE,
-    statep = IDLE;
+  enum State { IDLE, HOMING, RUNNING, LIFT, PLACE } state = IDLE, statep = IDLE;
 
   // Foot space
   Eigen::Vector3d pf;  ///< Foot position [m]

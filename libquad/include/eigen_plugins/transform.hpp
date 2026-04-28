@@ -1,7 +1,6 @@
 /**
  * @file transform.hpp
- *
- * Provides Eigen plugins for Transform
+ * @brief Provides Eigen plugins for Transform
  */
 
 /**

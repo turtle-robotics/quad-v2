@@ -1,3 +1,8 @@
+/**
+ * @file HID.hpp
+ * @brief HID class for joystick inputs
+ */
+
 #pragma once
 
 #include <Eigen/Dense>
@@ -6,9 +11,9 @@
 
 constexpr double js_norm = 1.0 / 32768.0;
 
-class Teleop {
+class HID {
 public:
-  Teleop(std::string gamepad_path)
+  HID(std::string gamepad_path)
       : gamepad_path{gamepad_path} {
           // std::cout << "Configured gamepad at " << gamepad_path << std::endl;
         };
@@ -17,9 +22,11 @@ public:
 
   bool error = false;
 
-  Eigen::Vector<double, 6> V =
-      Eigen::Vector<double, 6>::Zero(); // [wx, wy, wz, vx, vy, vz] rad/s, m/s
-  bool home_joints, deploy_legs;
+  /// Joystick twist [wx, wy, wz, vx, vy, vz] rad/s, m/s
+  Eigen::Vector<double, 6> V = Eigen::Vector<double, 6>::Zero();
+
+  bool home_joints;
+  bool deploy_legs;
 
 private:
   const std::string gamepad_path;

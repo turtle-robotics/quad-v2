@@ -1,7 +1,6 @@
 /**
  * @file matrixbase.hpp
- *
- * Provides Eigen plugins for MatrixBase
+ * @brief Provides Eigen plugins for MatrixBase
  */
 
 /**

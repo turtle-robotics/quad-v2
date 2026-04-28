@@ -18,7 +18,7 @@ jobs:
       - name: Build code
         run: cmake --build build-rpi
       - name: Build docs
-        run: cmake --build build-rpi --target libquaddocs
+        run: cmake --build build-rpi --target quaddocs
       - name: Upload GitHub Pages artifacts
         uses: actions/upload-pages-artifact@v5
         with:
