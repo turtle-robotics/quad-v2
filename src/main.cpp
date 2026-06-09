@@ -1,20 +1,24 @@
 #include "Robot.hpp"
 #include "config_loader.hpp"
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <errno.h>
 #include <iostream>
 #include <pthread.h>
 #include <signal.h>
 #include <sys/mman.h>
 
-constexpr useconds_t duty_cycle_us = 10000;
+using namespace std::chrono_literals;
+constexpr std::chrono::microseconds loop_rate = 5ms;
 std::shared_ptr<Robot> robot; // global robot instance
 
-void signal_callback_handler(int signum) {
-  ::printf("\033[2J\033[H"); // clear screen
-  robot->stopMotors();
+std::atomic<bool> stop_flag{false};
 
-  exit(signum);
+void signal_callback_handler(int signum) {
+  // ::printf("\033[2J\033[H"); // clear screen
+  stop_flag.store(true);
+  // exit(signum);
 }
 
 void print_help(const char *program_name) {
@@ -98,12 +102,17 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-
   std::cout << "Running..." << std::endl;
-  while (true) {
-    robot->loop(duty_cycle_us);
-    ::usleep(duty_cycle_us);
+  std::chrono::time_point start = std::chrono::high_resolution_clock::now();
+  while (!stop_flag.load()) {
+    start = std::chrono::high_resolution_clock::now();
+    robot->loop();
+    std::this_thread::sleep_until(start + loop_rate);
   }
+
+  robot->state = Robot::EXITING;
+  robot->loop();
+  std::cout << "Exiting" << std::endl;
 
   return 0;
 }

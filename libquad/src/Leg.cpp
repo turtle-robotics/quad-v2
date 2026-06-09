@@ -2,14 +2,14 @@
 
 // Forward Kinematics
 bool Leg::fk(const Eigen::Vector3d &thetalist, Eigen::Vector3d &pf) {
-  double th1 = thetalist[0];
-  double th2 = thetalist[1];
-  double th3 = -thetalist[2] - thetalist[1];
+  double th1 = thetadir[0] * thetalist[0];
+  double th2 = thetadir[1] * thetalist[1];
+  double th3 = thetadir[2] * -thetalist[2] - thetadir[1] * thetalist[1];
   double h = l[1] * sin(th2) + l[2] * sin(th3);
   double s1 = sin(th1);
   double c1 = cos(th1);
 
-  pf.x() = -l[1] * cos(th2) + l[2] * cos(th3);
+  pf.x() = l[1] * cos(th2) - l[2] * cos(th3);
   pf.y() = l[0] * c1 - h * s1;
   pf.z() = l[0] * s1 + h * c1 + l[3];
   return true;
@@ -26,8 +26,8 @@ bool Leg::ik(const Eigen::Vector3d &pf, Eigen::Vector3d &thetalist,
                       pow(l[0], 2)); // z projection on plane of upper/lower leg
   double d2 = pow(x, 2) + pow(zproj, 2);
 
-  if (d2 < 0)
-    return false;
+  // if (zproj < 0)
+  //   return false;
 
   thetalist[0] = atan2(z, y) - acos(l[0] / sqrt(y * y + z * z));
   thetalist[1] = atan2(zproj, x) - acos((pow(l[1], 2) + d2 - pow(l[2], 2)) /
@@ -119,6 +119,15 @@ void Leg::liftTo(const Eigen::Isometry3d &T) {
 }
 
 void Leg::run() {
+  // On state change
+  if (state != statep) {
+    switch (state) {
+    case DEPLOY: {
+      traj_start = std::chrono::high_resolution_clock::now();
+    } break;
+    }
+  }
+
   if (state != HOMING && state != IDLE) {
     ik(pf, thetalist, &Jinv);
     ivk(vf, Jinv, thetadlist);
@@ -133,46 +142,57 @@ void Leg::run() {
     thetaddlist.setZero();
     taulist.setZero();
   } break;
+  case DEPLOY: {
+    // jointTrajectory(t1, t2, traj_start, Tf);
+  } break;
   case RUNNING: {
-  }
+  } break;
   case LIFT: {
     // Set new setpoint
     // if (statep != LIFT)
     //   pf.z() -= llift;
     // Thoughts: Need to add a trajectory function that steps to the desired
     // position, constrained by the max velocity. need to know dt
-  }
+  } break;
   }
 }
 
-bool Leg::jointTrajectory(const Eigen::Isometry3d &Tstart,
-                          const Eigen::Isometry3d &Tgoal, const double t0,
-                          const double t, Eigen::Isometry3d &T) {
-  Eigen::Vector3d theta0, thetaf, thetat;
-  ik(Tstart.translation(), theta0);
-  ik(Tstart.translation(), thetaf);
-
-  // Check joint pos limits
+bool Leg::jointTrajectory(const Eigen::Vector<double, njoints> &theta0,
+                          const Eigen::Vector<double, njoints> &thetaf,
+                          const double t,
+                          Eigen::Vector<double, njoints> &theta) {
   if ((theta0.array() < thetaRange.col(0).array()).any() ||
       (theta0.array() > thetaRange.col(1).array()).any() ||
       (thetaf.array() > thetaRange.col(1).array()).any() ||
       (thetaf.array() > thetaRange.col(1).array()).any())
     return false;
 
-  // Find minimum time by joint vel/accel limits
   double dt_accel = ::sqrt(
       6 * (thetaf - theta0).cwiseQuotient(thetaddMax).cwiseAbs().maxCoeff());
   double dt_vel =
       1.5 * (thetaf - theta0).cwiseQuotient(thetadMax).cwiseAbs().maxCoeff();
-  double tf_min = std::max(dt_accel, dt_vel) + t0;
+  double tf_min = std::max(dt_accel, dt_vel);
 
-  double st = cubicTimeScaling(tf_min - t0, t);
+  double st = cubicTimeScaling(tf_min, t);
 
-  thetat = st * thetaf + (1 - st) * theta0;
+  theta = st * thetaf + (1 - st) * theta0;
+  return true;
+}
+
+bool Leg::jointTrajectory(const Eigen::Isometry3d &Tstart,
+                          const Eigen::Isometry3d &Tgoal, // const double t0,
+                          const double t, Eigen::Isometry3d &T) {
+  Eigen::Vector3d theta0, thetaf, theta;
+  ik(Tstart.translation(), theta0);
+  ik(Tstart.translation(), thetaf);
+
+  if (!jointTrajectory(theta0, thetaf, t, theta))
+    return false;
 
   Eigen::Vector3d pft;
-  fk(thetat, pft);
+  fk(theta, pft);
   T.translation() = pft;
+  return true;
 }
 
 // void Leg::home() {

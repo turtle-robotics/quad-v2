@@ -6,10 +6,10 @@
 
 template <typename type> using LegArray = std::array<type, 4>;
 template <typename type> using JointArray = std::array<type, njoints>;
-template <typename type> using LegJointArray = LegArray<JointArray<type>>;
+template <typename type> using LegJointArray = std::array<type, 4 * njoints>;
 
 typedef LegJointArray<std::shared_ptr<mjbots::moteus::Controller>> Motors;
-typedef LegJointArray<double> JointPose;
+typedef Eigen::Matrix<double, njoints, 4> JointPose;
 
 using PosCmd = mjbots::moteus::PositionMode::Command;
 inline JointArray<PosCmd> makePosCmd(Eigen::Vector3d theta,

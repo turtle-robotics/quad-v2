@@ -81,7 +81,7 @@ template <> struct convert<JointPose> {
     }
     for (int nleg = 0; nleg < 4; nleg++) {
       for (int njoint = 0; njoint < 3; njoint++) {
-        rhs[nleg][njoint] = node[nleg][njoint].as<double>();
+        rhs(nleg * 3 + njoint) = node[nleg][njoint].as<double>();
       }
     }
     return true;
@@ -153,11 +153,11 @@ inline HID makeHID(const YAML::Node &node) {
  * @param node YAML configuration
  * @return Array of Leg objects
  */
-inline LegArray<Leg> makeLegs(const YAML::Node &node) {
+inline LegArray<std::shared_ptr<Leg>> makeLegs(const YAML::Node &node) {
   if (!node.IsMap()) {
     throw "Leg YAML is incomplete";
   }
-  LegArray<Leg *> legs;
+  LegArray<std::shared_ptr<Leg>> legs;
 
   JointProperties shoulder = node["shoulder"].as<JointProperties>();
   JointProperties upper = node["upper"].as<JointProperties>();
@@ -206,10 +206,10 @@ inline LegArray<Leg> makeLegs(const YAML::Node &node) {
     Mlist[2].translation() = Eigen::Vector3d{-l[1], ySign[nleg] * l[0], 0.0};
     Mlist[3].translation() =
         Eigen::Vector3d{l[2] - l[1], ySign[nleg] * l[0], 0.0};
-    legs[nleg] = new Leg(l, Slist, M, Mlist, Glist, thetaRange, thetadMax,
-                         thetaddMax, tauMax);
+    legs[nleg] = std::make_shared<Leg>(l, Slist, M, Mlist, Glist, thetaRange,
+                                       thetadMax, thetaddMax, tauMax);
   }
-  return {*legs[0], *legs[1], *legs[2], *legs[3]};
+  return legs;
 };
 
 /**
@@ -251,26 +251,28 @@ inline std::shared_ptr<Robot> makeRobot(const YAML::Node &node) {
     throw "Robot YAML is incomplete";
   }
 
+  const auto legs = makeLegs(node["joints"]);
+
   const auto transport = makePi3HatTransport(node["motors"]["servomap"]);
 
   std::string canIDMap[4]{"LF", "RF", "LB", "RB"};
+  std::map<uint32_t, unsigned> can_map;
 
   // Create motor objects
   Motors motors;
-  for (int nleg = 0; nleg < 4; nleg++) {
-    for (int njoint = 0; njoint < 3; njoint++) {
-      unsigned can_id =
-          node["motors"]["map"][canIDMap[nleg]][njoint].as<unsigned>();
-      motors[nleg][njoint] = std::make_shared<moteus::Controller>([&]() {
-        moteus::Controller::Options coptions;
-        coptions.transport = transport;
-        coptions.id = can_id;
-        return coptions;
-      }());
-    }
+  for (unsigned i = 0; i < 12; i++) {
+    unsigned can_id =
+        node["motors"]["map"][canIDMap[i / 3]][i % 3].as<unsigned>();
+    motors[i] = std::make_shared<moteus::Controller>([&]() {
+      moteus::Controller::Options coptions;
+      coptions.transport = transport;
+      coptions.id = can_id;
+      return coptions;
+    }());
+    can_map.insert({can_id, i});
   }
 
-  return std::make_shared<Robot>(makeChassis(node["chassis"]),
-                                 makeLegs(node["joints"]),
-                                 makeHID(node["gamepad"]), motors, transport);
+  return std::make_shared<Robot>(makeChassis(node["chassis"]), legs,
+                                 makeHID(node["gamepad"]), motors, can_map,
+                                 transport);
 };

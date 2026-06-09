@@ -6,6 +6,7 @@
 #pragma once
 
 #include "spatial.hpp"
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <numbers>
@@ -44,7 +45,10 @@ public:
       Eigen::Vector<double, njoints> &tauMax)
       : l{l}, Slist{Slist}, M{M}, Mlist{Mlist}, Glist{Glist},
         thetaRange{thetaRange}, thetadMax{thetadMax}, thetaddMax{thetaddMax},
-        tauMax{tauMax} {};
+        tauMax{tauMax} {
+
+    T_deploy.translation() = Eigen::Vector3d{0, 0, 0};
+  };
 
   /**
    * @brief Forward Kinematics
@@ -97,15 +101,28 @@ public:
    *
    * Compute joint angles at a specified time on a joint trajectory
    *
+   * @param[in] theta0 beginning joint angles
+   * @param[in] thetaf ending joint angles
+   * @param[in] t Current time, normalized to trajectory [0,1]
+   * @param[out] theta current joint angles
+   */
+  bool jointTrajectory(const Eigen::Vector<double, njoints> &theta0,
+                       const Eigen::Vector<double, njoints> &thetaf,
+                       const double t, Eigen::Vector<double, njoints> &theta);
+
+  /**
+   * @brief Joint Trajectory
+   *
+   * Compute joint angles at a specified time on a joint trajectory
+   *
    * @param[in] Tstart SE(3) beginning foot pose
    * @param[in] Tgoal SE(3) ending foot pose
-   * @param[in] t0 Time at beginning of trajectory
-   * @param[in] t Current time
+   * @param[in] t Current time, normalized to trajectory [0,1]
    * @param[out] T SE(3) current foot pose
    */
   bool jointTrajectory(const Eigen::Isometry3d &Tstart,
-                       const Eigen::Isometry3d &Tgoal, const double t0,
-                       const double t, Eigen::Isometry3d &Tcurrent);
+                       const Eigen::Isometry3d &Tgoal, const double t,
+                       Eigen::Isometry3d &Tcurrent);
 
   /**
    * @brief Run foot operations
@@ -115,22 +132,33 @@ public:
   /**
    * @brief Leg State
    */
-  enum State { IDLE, HOMING, RUNNING, LIFT, PLACE } state = IDLE, statep = IDLE;
+  enum State {
+    IDLE,
+    HOMING,
+    DEPLOY,
+    RUNNING,
+    LIFT,
+    PLACE
+  } state = IDLE,
+    statep = IDLE;
 
-  // Foot space
-  Eigen::Vector3d pf;  ///< Foot position [m]
-  Eigen::Vector3d vf;  ///< Foot velocity [m/s]
+  /* Foot space */
+  Eigen::Isometry3d Tf{Eigen::Isometry3d::Identity()}; ///< Foot pose SE(3)
+  Eigen::Ref<Eigen::Vector3d> pf{Tf.translation()};    ///< Foot position [m]
+  Eigen::Vector3d vf;                                  ///< Foot velocity [m/s]
   Eigen::Vector3d dvf; ///< Foot acceleration [m/s^2]
   Eigen::Vector3d ff;  ///< Foot force [N]
   Eigen::Vector3d g;   ///< Gravity [m/s^2]
-  // Eigen::Vector3d liftpf; //< m
-  // double llift = 0.02;    // m TODO: Set from config
 
-  // Joint space (updated by motor controller)
-  Eigen::Vector<double, njoints> thetalist;   // rad
-  Eigen::Vector<double, njoints> thetadlist;  // rad/s
-  Eigen::Vector<double, njoints> thetaddlist; // rad/s^2
-  Eigen::Vector<double, njoints> taulist;     // N*m
+  /* Joint space (updated by motor controller) */
+  Eigen::Vector<double, njoints> thetalist;  ///< Joint angle [rad]
+  Eigen::Vector<double, njoints> thetadlist; ///< Joint angular velocity [rad/s]
+  Eigen::Vector<double, njoints>
+      thetaddlist; ///< Joint angular acceleration [rad/s^2]
+  Eigen::Vector<double, njoints> taulist; ///< Joint torque [N*m]
+
+  Eigen::Isometry3d T_stow;   ///< Stow foot pose SE(3)
+  Eigen::Isometry3d T_deploy; ///< Deploy foot pose SE(3)
 
 private:
   /* Leg geometry & mass properties */
@@ -160,4 +188,7 @@ private:
   Eigen::Matrix<double, 6, njoints + 1> dVi;     // rad/s^2, m/s^2
   std::array<Eigen::Matrix6d, njoints + 1> AdTi; //
   Eigen::Vector6d Fi;                            // N*m, N
+
+  /* Trajectory Generation */
+  std::chrono::high_resolution_clock::time_point traj_start;
 };

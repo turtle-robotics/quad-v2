@@ -23,13 +23,13 @@ FetchContent_Declare(
 FetchContent_Declare(
   moteus
   GIT_REPOSITORY https://github.com/mjbots/moteus.git
-  GIT_TAG 0.1-20260424
+  GIT_TAG cpp/v1.0.0
 )
 
 FetchContent_Declare(
   pi3hat
   GIT_REPOSITORY https://github.com/mjbots/pi3hat.git
-  GIT_TAG 0.1-20260117
+  GIT_TAG v1.0.0
 )
 
 find_package(Eigen3 REQUIRED)

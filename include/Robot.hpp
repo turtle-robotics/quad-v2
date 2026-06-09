@@ -21,26 +21,39 @@ class Robot {
   using Resolution = moteus::Resolution;
 
 public:
-  Robot(Chassis chassis, LegArray<Leg> legs, HID hid, Motors motors,
+  Robot(Chassis chassis, LegArray<std::shared_ptr<Leg>> legs, HID hid,
+        Motors motors, std::map<uint32_t, unsigned> can_map,
         std::shared_ptr<pi3hat::Pi3HatMoteusTransport> transport)
       : chassis{chassis}, legs{legs}, hid{hid}, motors{motors},
-        transport{transport} {};
+        can_map{can_map}, transport{transport} {};
 
   // Configure robot using a YAML configuration file
   int configure(YAML::Node conf, bool configure_motors,
                 bool write_motor_config);
   int init();
-  void loop(unsigned int us);
+  void loop();
 
   void stopMotors();
   void queryMotors();
   void printStatus();
-  int gotoJointPose(const JointPose &jointPose, double max_torque = NaN);
-
-  int homeMotors();
+  bool gotoJointPose(const JointPose &jointPose, double vel_lim = NaN,
+                     double max_torque = NaN);
+  void run();
+  bool homeMotors();
 
   std::string status;
   Eigen::Quaterniond attitude;
+
+  enum State {
+    IDLE,
+    HOMING,
+    DEPLOY_A,
+    DEPLOY_B,
+    DEPLOY_C,
+    RUNNING,
+    EXITING
+  } state = IDLE,
+    prev_state = IDLE;
 
 private:
   bool configured = false;
@@ -48,61 +61,56 @@ private:
   bool legs_deployed = false;
   bool gamepad_error = false;
   // bool enabled = false;
-  enum State {
-    IDLE,
-    HOMING,
-    DEPLOY_A,
-    DEPLOY_B,
-    DEPLOY_C,
-    RUNNING
-  } state = IDLE,
-    prev_state = IDLE;
+
   std::map<State, std::string> state_names{
       {IDLE, "IDLE"},         {HOMING, "HOMING"},     {DEPLOY_A, "DEPLOY_A"},
       {DEPLOY_B, "DEPLOY_B"}, {DEPLOY_C, "DEPLOY_C"}, {RUNNING, "RUNNING"},
+      {EXITING, "EXITING"},
   };
+
+  struct HomingState {
+    enum { STARTUP, MOVING, WAITING, HOMED } state = STARTUP;
+    size_t cycle_count = 0;
+    void reset() { *this = {}; }
+  };
+
+  LegArray<HomingState> homing_states;
+
   int last_leg_id = 0;
 
   Chassis chassis;
-  LegArray<Leg> legs;
+  LegArray<std::shared_ptr<Leg>> legs;
   HID hid;
   Motors motors;
 
+  std::map<uint32_t, unsigned> can_map;
+
   LegJointArray<moteus::Query::Result> motorState;
   LegJointArray<PosCmd> motorPosCmds;
-  
+
   pi3hat::Attitude imu;
   std::shared_ptr<pi3hat::Pi3HatMoteusTransport> transport;
   // Handling CAN FD frames
-  std::vector<moteus::CanFdFrame> frames;
+  LegJointArray<moteus::CanFdFrame> frames;
   std::vector<moteus::CanFdFrame> replies;
 
   // Homing parameters
-  double max_homing_torque = 3.5;
-  PosFmt fmt_home{
-      .position = Resolution::kIgnore,
+  const PosFmt fmt_home{
+      .position = Resolution::kFloat,
       .velocity = Resolution::kFloat,
+      .feedforward_torque = Resolution::kFloat,
       .maximum_torque = Resolution::kFloat,
       .ignore_position_bounds = Resolution::kFloat,
   };
-  PosCmd cmd_home{
-      .position = NaN,
-      .maximum_torque = max_homing_torque,
-      .ignore_position_bounds = 1.0,
-  };
-  PosFmt fmt_deploy{
+  const PosFmt fmt_run{
       .position = Resolution::kFloat,
       .velocity = Resolution::kIgnore,
+      .feedforward_torque = Resolution::kIgnore,
       .maximum_torque = Resolution::kFloat,
       .velocity_limit = Resolution::kFloat,
   };
-  PosCmd cmd_deploy{
-      .maximum_torque = 2.5,
-      .velocity_limit = 0.5,
-  };
-
-  double deploy_torque = 2.5; // N m
-  double deploy_vel = 0.1;    // m/s
+  double deploy_torque = 2.5; /// N m
+  double deploy_vel = 1.0;    /// m/s
 
   // Predefined joint poses
   JointPose home_joint_pose;
@@ -110,6 +118,7 @@ private:
   JointPose deploy_b_cmds;
   JointPose deploy_c_cmds;
 
-  bool setJointPos(JointPose &jointPos);
+  bool setJointPos(const JointPose &jointPos);
+  int updateMotorState();
   void cycleFrames();
 };

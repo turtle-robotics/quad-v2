@@ -1,6 +1,9 @@
 option(BUILD_TESTING "..." OFF)
 
+set(PYBIND11_FINDPYTHON ON)
+
 find_package(Eigen3 REQUIRED)
+find_package(pybind11 CONFIG)
 
 add_compile_options(-static-libstdc++ -std=c++20 -Wextra -Wno-psabi -Wno-deprecated -pedantic -w)
 
@@ -14,6 +17,14 @@ target_compile_definitions(
   EIGEN_TRANSFORM_PLUGIN="eigen_plugins/transform.hpp"
   EIGEN_MATRIXBASE_PLUGIN="eigen_plugins/matrixbase.hpp"
 )
+
+if (TARGET pybind11::module)
+  pybind11_add_module(libquad_python src/python_bindings.cpp)
+  set_target_properties(libquad_python PROPERTIES OUTPUT_NAME "libquad")
+
+  target_link_libraries(libquad_python PUBLIC libquad)
+  install(TARGETS libquad_python DESTINATION .)
+endif (TARGET pybind11::module)
 
 if(BUILD_TESTING)
   enable_testing()
